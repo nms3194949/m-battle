@@ -659,6 +659,7 @@ function showResult(){
     for(const v of[same?'同':'第'+r.place,r.name+(r.out?'・出局':''),r.ko,r.lines,r.h]){const td=document.createElement('td');td.textContent=v;tr.appendChild(td)}tb.appendChild(tr)});
   $('resSub').textContent=solo1?`被 KO ${g.dl.length} 次・分數 ${g.score}`:t;$('res').hidden=false;
 }
+$('resOk').onclick=()=>{$('res').hidden=true};
 function win(msg){if(!g.running)return;g.running=false;g.over=true;g.cur=null;musStop();setPhase('');wins++;SND.win();pres({st:'idle',w:wins});overlay('你贏了',msg||'按「準備」再來一場')}
 
 /* ---------- 輸入 ---------- */
