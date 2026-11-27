@@ -267,16 +267,26 @@ const SND={
   win:()=>[60,64,67,72,76,79,84].forEach((m,i)=>tone(mf(m),.16,'square',.08,0,i*.07)),
   lose:()=>[67,63,60,55].forEach((m,i)=>tone(mf(m),.22,'triangle',.14,0,i*.15))
 };
-/* 原創循環：小調 i–VI–III–VII 走向，低音八分音符＋十六分琶音＋碎拍 */
-const CH=[[45,0],[41,1],[48,1],[43,1]];let musTimer=null,step=0,nextT=0;
+/* 原創戰鬥曲：A 小調 i–VI–VII–V，四拍大鼓＋2/4 小鼓＋十六分 hi-hat＋八度鋸齒低音＋主旋律＋切分和弦 */
+const _=null;
+const MEL=[[69,_,72,_,76,_,81,_,79,_,76,_,74,_,76,_],[77,_,76,_,72,_,69,_,72,_,74,_,76,_,77,_],[79,_,_,74,79,_,83,_,81,_,79,_,77,_,74,_],[76,_,_,_,80,_,83,_,88,_,_,_,86,84,83,80],
+  [81,_,81,84,_,81,76,_,81,_,83,84,_,83,81,_],[77,_,77,81,_,77,72,_,77,_,79,81,_,79,77,_],[79,_,79,83,_,79,74,_,79,_,81,83,_,86,_,_],[88,_,86,_,84,_,83,_,84,_,83,_,81,_,80,_]];
+const ROOT=[45,41,43,40],CHD=[[57,60,64],[53,57,60],[55,59,62],[52,56,59]];
+let musTimer=null,step=0,nextT=0;
+function bass(f,dur,vol,d){if(!AC)return;const t=AC.currentTime+d,o=AC.createOscillator(),fl=AC.createBiquadFilter(),gn=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(f,t);fl.type='lowpass';fl.frequency.setValueAtTime(1400,t);fl.frequency.exponentialRampToValueAtTime(300,t+dur);fl.Q.value=6;
+  gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(fl).connect(gn).connect(MG);o.onended=()=>{o.disconnect();fl.disconnect();gn.disconnect()};o.start(t);o.stop(t+dur+.02)}
+function kick(d){if(!AC)return;const t=AC.currentTime+d,o=AC.createOscillator(),gn=AC.createGain();o.type='sine';o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);gn.gain.setValueAtTime(.55,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(gn).connect(MG);o.onended=()=>{o.disconnect();gn.disconnect()};o.start(t);o.stop(t+.18)}
 function musStart(){if(!ac()||musTimer)return;step=0;nextT=AC.currentTime+.05;musTimer=setInterval(()=>{
-  const fast=document.documentElement.dataset.phase==='hot',spb=60/(fast?168:148)/4;
+  const ph=document.documentElement.dataset.phase||'',bpm=ph==='hot'?182:ph==='warm'?170:160,spb=60/bpm/4;
   if(nextT<AC.currentTime-.2)nextT=AC.currentTime+.02;
-  while(nextT<AC.currentTime+.15){const pos=step%16,[r,maj]=CH[Math.floor(step/16)%4],d=nextT-AC.currentTime;
-    if(pos%2===0)tone(mf(r+(pos%4===2?12:0)),.13,'triangle',.16,0,d,MG);
-    const tones=[r+24,r+24+(maj?4:3),r+31,r+36],pat=[0,2,1,3,2,1,0,2,3,1,2,0,1,3,2,1];
-    if(pos!==7&&pos!==15)tone(mf(tones[pat[pos]]),.07,'square',.035,0,d,MG);
-    if(pos%4===2)noise(.03,.05,6000,d,MG,true);if(pos===0||pos===8)noise(.06,.12,180,d,MG);
+  while(nextT<AC.currentTime+.15){const pos=step%16,bar=Math.floor(step/16)%8,c=bar%4,d=nextT-AC.currentTime,r=ROOT[c];
+    if(pos%4===0)kick(d);if(ph==='hot'&&pos===14)kick(d);
+    if(pos===4||pos===12){noise(.13,.22,1900,d,MG);tone(190,.07,'triangle',.12,0,d,MG)}
+    noise(pos%4===2?.08:.025,pos%4===2?.07:.035,7500,d,MG,true);
+    if(pos%2===0||pos===3||pos===11)bass(mf(r+((pos/2)%2?12:0)),.14,.22,d);
+    const m=MEL[bar][pos];if(m!==null){tone(mf(m),.13,'square',.075,0,d,MG);if(ph)tone(mf(m+12),.1,'square',.03,0,d,MG)}
+    if(pos===0||pos===6||pos===10)for(const k of CHD[c])tone(mf(k),.09,'sawtooth',.025,0,d,MG);
+    if(ph==='hot'&&pos%2===1)tone(mf(CHD[c][(pos>>1)%3]+12),.05,'triangle',.04,0,d,MG);
     step++;nextT+=spb}},25)}
 function musStop(){clearInterval(musTimer);musTimer=null}
 function sndUI(){$('bSfx').textContent='音效 '+(sfxOn?'開':'關');$('bMus').textContent='音樂 '+(musOn?'開':'關');if(SG)SG.gain.value=sfxOn?.9:0;if(MG)MG.gain.value=musOn?.5:0;try{localStorage.setItem('bb-sfx',sfxOn?'1':'0');localStorage.setItem('bb-mus',musOn?'1':'0')}catch(_){}}
