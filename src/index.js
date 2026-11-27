@@ -134,6 +134,7 @@ const DEFAULTS = {
   connCap: 3500,         // 每天線上連線上限（約對應免費額度；0＝不限）
   warnPct: 70,           // 用量達幾 % 時通知
 };
+const STAR_APM = [null, [0, 12], [12, 25], [25, 45], [45, 70], [70, 1e9]]; // 與前端星級一致
 const TIERS = [0, 10, 20, 30, 45, 60, 80, 100]; // 每分鐘攻擊（APM）分級門檻
 
 const today = () => new Date().toISOString().slice(0, 10); // UTC 日期（Cloudflare 免費額度也是 UTC 重置）
@@ -233,11 +234,21 @@ export class Archive extends DurableObject {
       if (!c.ghosts) return json({ list: [] });
       const n = Math.max(1, Math.min(5, Number(url.searchParams.get("n")) || 1));
       const apm = Math.max(0, Number(url.searchParams.get("apm")) || 20), uid = url.searchParams.get("uid") || "";
-      const t = tierOf(apm);
-      let rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE tier BETWEEN ? AND ? AND uid<>? ORDER BY RANDOM() LIMIT ?", Math.max(0, t - 1), t + 1, uid, n).toArray();
-      if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE uid<>? AND id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", uid, n - rows.length).toArray());
+      const t = tierOf(apm), star = Math.max(0, Math.min(5, Number(url.searchParams.get("star")) | 0));
+      const ids = (r) => r.map((x) => x.id).join(",") || "0";
+      let rows;
+      if (star) {
+        // 玩家指定星級：先找該星級範圍內的紀錄，不夠再找 APM 最接近的
+        const [lo, hi] = STAR_APM[star];
+        rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE apm>=? AND apm<? AND uid<>? ORDER BY RANDOM() LIMIT ?", lo, hi, uid, n).toArray();
+        // 不夠時用自己在該星級的紀錄補；仍不夠就由前端補同星級 AI（不跨星級，避免太難）
+        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE apm>=? AND apm<? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", lo, hi, n - rows.length).toArray());
+      } else {
+        rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE tier BETWEEN ? AND ? AND uid<>? ORDER BY RANDOM() LIMIT ?", Math.max(0, t - 1), t + 1, uid, n).toArray();
+        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE uid<>? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", uid, n - rows.length).toArray());
+      }
       // 別人的紀錄不夠時，用自己的紀錄補（測試初期或冷門等級）
-      if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", n - rows.length).toArray());
+      if (!star && rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", n - rows.length).toArray());
       this.bump("ghost", rows.length);
       return json({ list: rows.map((r) => ({ id: r.id, name: r.name, tag: r.tag, apm: r.apm, rec: r.data })) });
     }

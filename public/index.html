@@ -245,6 +245,7 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
             <div class="msel">
               <label><span>對手</span><select id="foe" aria-label="對手"><option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option><option value="ghost" id="optGhost">真人紀錄</option><option value="cpu">練習模式</option><option value="none">無對手</option></select></label>
               <label><span>AI 人數</span><select id="ainum" aria-label="AI 人數"><option value="1">1 對 1</option><option value="2">2 AI・3 人戰</option><option value="3">3 AI・4 人戰</option><option value="4">4 AI・5 人戰</option><option value="5">5 AI・6 人戰</option></select></label>
+              <label id="lvlRow" hidden><span>對手星級</span><select id="lvl" aria-label="對手星級"></select></label>
             </div>
             <div class="mtog"><button data-tog="dig">挖掘地圖</button><button data-tog="timed" id="togTimed">限時</button></div>
             <button class="start" id="bSolo">START</button>
@@ -612,7 +613,7 @@ function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fil
 function startGame(mode,opt){
   opt=opt||{};closeMenu();musStop();clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
   reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.recStop=false;g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
-  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1];AIS.push(aiMake('ai'+i,'ai2',!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:''):`AI ${i}・普通`,gh?gh.rec:null,gh?starsOf(gh.apm):2))}opt.timed=true}
+  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1],gs=gh?starsOf(gh.apm):(opt.star||Math.min(myStars(),BEST)),lv=STARLV[gs]||'ai2';AIS.push(aiMake('ai'+i,lv,!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:''):`AI ${i}・${AIL[lv].short}`,gh?gh.rec:null,gs))}opt.timed=true}
   if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
   if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name,(hostGhosts[r.id]||{}).rec,r.sr));else for(const r of ro)netAIs.set(r.id,{sr:r.sr||2,name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
   g.elim=(1+(mode==='solo'?AIS.length:Math.max(1,(opt.humans||2)-1)+(opt.ais||[]).length))>2;
@@ -620,7 +621,7 @@ function startGame(mode,opt){
   overlay(String(n),mode==='online'?(g.elim?'混戰開始・被 KO 就出局':'對戰開始・2 分鐘比 KO 數'):(AIS.length>1?`${AIS.length+1} 人混戰・被 KO 就出局`:g.timed?'限時 2 分鐘':'練習開始'));ac();SND.count(false);
   cdTimer=setInterval(()=>{n--;if(n>0){overlay(String(n),'');SND.count(false)}else{clearInterval(cdTimer);overlay(null);SND.count(true);g.running=true;next();if(musOn)musStart();if(mode==='online')pres({st:'play',b:enc(),dl:[],out:false,pl:0,s:0,l:0,h:0})}},700);
 }
-const soloOpt=()=>({timed:$('timed').checked,dig:$('dig').checked,foe:$('foe').value,ainum:+$('ainum').value});
+const soloOpt=()=>({timed:$('timed').checked,dig:$('dig').checked,foe:$('foe').value,ainum:+$('ainum').value,star:Math.min(BEST,+$('lvl').value||0)});
 const ordinal=n=>n+(n===1?'ST':n===2?'ND':n===3?'RD':'TH');
 function ko(){
   SND.ko();shake=10;
@@ -638,11 +639,11 @@ function timeUp(){endMatch()}
 let myApm=20;try{myApm=+localStorage.getItem('bb-apm')||20}catch(_){}
 function uploadRec(){
   const rec=g.rec||[],dur=(g.recStop&&rec.length?+rec[rec.length-1].split(',')[0]:(g.t||0))/1000;if(!g.timed||rec.length<20||dur<20)return;
-  const apm=g.sent/dur*60,s0=myStars();myApm=Math.round((myApm*.7+apm*.3)*10)/10;try{localStorage.setItem('bb-apm',myApm)}catch(_){}const s1=myStars();if(s1>s0)g.starUp=s1;showMyStar();if(M)pres({sr:s1});
+  const apm=g.sent/dur*60,s0=myStars();myApm=Math.round((myApm*.7+apm*.3)*10)/10;try{localStorage.setItem('bb-apm',myApm)}catch(_){}const s1=myStars();if(bumpBest(s1))g.starUp=s1;showMyStar();buildLvl();if(M)pres({sr:s1});
   if(!SRV)return;
   fetch('/api/replay',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uid:UID,name:nick(),tag:TAG,sent:g.sent,lines:g.lines,rec:rec.join(';')})}).catch(()=>{});
 }
-async function fetchGhosts(n){if(!SRV)return[];try{const r=await fetch(`/api/ghosts?n=${n}&apm=${myApm}&uid=${UID}`);const d=await r.json();return Array.isArray(d.list)?d.list.filter(x=>x&&typeof x.rec==='string').map(x=>({name:String(x.name||'玩家').slice(0,12),tag:/^\d{4}$/.test(x.tag)?x.tag:'',apm:+x.apm||0,rec:x.rec})):[]}catch(_){return[]}}
+async function fetchGhosts(n,star){if(!SRV)return[];try{const r=await fetch(`/api/ghosts?n=${n}&apm=${myApm}&uid=${UID}${star?'&star='+star:''}`);const d=await r.json();return Array.isArray(d.list)?d.list.filter(x=>x&&typeof x.rec==='string').map(x=>({name:String(x.name||'玩家').slice(0,12),tag:/^\d{4}$/.test(x.tag)?x.tag:'',apm:+x.apm||0,rec:x.rec})):[]}catch(_){return[]}}
 async function srvStatus(){if(!SRV)return{online:true};try{return await(await fetch('/api/status')).json()}catch(_){return{online:true}}}
 function endMatch(){
   if(!g.running)return;uploadRec();g.running=false;g.over=true;g.cur=null;g.clearing=null;musStop();
@@ -672,9 +673,15 @@ function setTarget(id){const f=foes().find(x=>x.id===id&&!x.out);if(f&&g.running
 function cycleTarget(){const l=foes().filter(f=>!f.out);if(l.length<2)return;const i=l.findIndex(f=>f.id===g.target);g.target=l[(i+1)%l.length].id;SND.move()}
 
 /* ---------- AI 對手（可多開） ---------- */
-const AISTAR={ai1:1,ai2:2,ai3:4,ai4:5};
+const AISTAR={ai1:1,ai2:2,ai3:3,ai4:4},STARLV=[null,'ai1','ai2','ai3','ai4','ai4'];
+let BEST=2;try{BEST=Math.max(2,Math.min(5,+localStorage.getItem('bb-best')||2))}catch(_){}
 function starsOf(apm){apm=+apm||0;return apm<12?1:apm<25?2:apm<45?3:apm<70?4:5}
 function myStars(){return starsOf(myApm)}
+function bumpBest(n){if(n>BEST){BEST=n;try{localStorage.setItem('bb-best',BEST)}catch(_){}buildLvl();return true}return false}
+function buildLvl(){const sel=$('lvl'),fo=$('foe');if(!sel||!fo)return;const cur=sel.value||'0';sel.textContent='';const o0=new Option(`星級：自動（${myStars()}★）`,'0');sel.add(o0);
+  for(let n=1;n<=5;n++){const o=new Option(n<=BEST?'★'.repeat(n)+`　${n} 星`:`${n} 星　🔒 達到 ${n}★ 解鎖`,String(n));o.disabled=n>BEST;sel.add(o)}sel.value=+cur<=BEST?cur:'0';
+  for(const o of fo.options){const need=AISTAR[o.value];if(!need)continue;const base=AIL[o.value].name;o.disabled=need>BEST;o.textContent=need>BEST?`${base}　🔒 ${need}★`:base}
+  if(fo.selectedOptions[0]&&fo.selectedOptions[0].disabled){fo.value='ai2'}}
 function starHTML(n,c){n=Math.max(1,Math.min(5,n|0||1));return `<span class="star s${n}" title="${n} 星">${n>3?'<u>'+(c?'★':'★'.repeat(n))+'</u>':''}<i>${c?'★':'★'.repeat(n)}</i>${c?'<b>'+n+'</b>':''}</span>`}
 function escH(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function showMyStar(){const e=$('myStar');if(e)e.innerHTML=starHTML(myStars(),1)}
@@ -744,7 +751,7 @@ function showResult(){
   const mine=sorted.find(r=>r.me),solo1=rows.length===1,tie=!solo1&&sorted.filter(r=>r.place===1).length>1&&mine.place===1;
   const t=solo1?'時間到':tie?'平手':mine.place===1?'你贏了':`第 ${mine.place} 名`;
   if(!solo1&&mine.place===1&&!tie){wins++;SND.win()}else if(solo1)SND.win();else SND.lose();
-  if(online){pres({st:'idle',w:wins});overlay(t,'按「準備」再戰')}else overlay(t,`分數 ${g.score}・攻擊 ${g.sent}`,'再來一局',()=>startGame('solo',soloOpt()));
+  if(online){pres({st:'idle',w:wins});overlay(t,'按「準備」再戰')}else overlay(t,`分數 ${g.score}・攻擊 ${g.sent}`,'再來一局',()=>$('bSolo').click());
   const tb=$('resBody');tb.textContent='';
   sorted.forEach((r,i)=>{const tr=document.createElement('tr');if(r.me)tr.className='me';if(r.place===1)tr.classList.add('first');
     const same=i>0&&sorted[i-1].place===r.place;
@@ -772,7 +779,7 @@ for(const b of document.querySelectorAll('.pad button')){const k=b.dataset.k;
   for(const ev of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>release(k));}
 $('pad').addEventListener('contextmenu',e=>e.preventDefault());
 $('bSolo').onclick=async()=>{if(LB)await stopMM();if(M)await leaveRoom();const o=soloOpt();
-  if(o.foe==='ghost'){$('bSolo').disabled=true;o.ghosts=await fetchGhosts(o.ainum);$('bSolo').disabled=false;if(!o.ghosts.length)st('目前還沒有可用的玩家紀錄，先用 AI 代替。')}
+  if(o.foe==='ghost'){$('bSolo').disabled=true;o.ghosts=await fetchGhosts(o.ainum,o.star);$('bSolo').disabled=false;if(!o.ghosts.length)st('目前還沒有可用的玩家紀錄，先用 AI 代替。')}
   startGame('solo',o)};
 $('ovB').onclick=()=>$('bSolo').click();
 
@@ -811,7 +818,7 @@ const nick=()=>($('nick').value.trim().slice(0,12)||'玩家');
 let UID='',TAG='';try{UID=localStorage.getItem('bb-uid')||'';TAG=localStorage.getItem('bb-tag')||''}catch(_){}
 if(!/^[0-9a-z]{12}$/.test(UID)){UID='';const a='0123456789abcdefghijklmnopqrstuvwxyz';for(let i=0;i<12;i++)UID+=a[rnd(36)];try{localStorage.setItem('bb-uid',UID)}catch(_){}}
 if(!/^\d{4}$/.test(TAG)){TAG=String(rnd(10000)).padStart(4,'0');try{localStorage.setItem('bb-tag',TAG)}catch(_){}}
-$('myTag').textContent='#'+TAG;showMyStar();
+$('myTag').textContent='#'+TAG;showMyStar();bumpBest(myStars());buildLvl();
 const fullName=()=>nick()+'#'+TAG;
 const pres=p=>{if(M)M.presence(p).catch(()=>{})};
 /* 自架伺服器（game.momowinwin.com）用的 WebSocket 房間；介面跟 Claude 房間相同 */
@@ -944,7 +951,7 @@ async function onMatch(m){const d=m.data||{};if(!LB||!Array.isArray(d.ids)||type
 
 /* ---------- 開始選單（盤面內） ---------- */
 function syncMenu(){
-  const isAI=!!AIL[$('foe').value]||$('foe').value==='ghost';$('ainum').disabled=!isAI;
+  const isAI=!!AIL[$('foe').value]||$('foe').value==='ghost';$('ainum').disabled=!isAI;$('lvlRow').hidden=$('foe').value!=='ghost';
   for(const b of document.querySelectorAll('[data-tog]'))b.classList.toggle('on',$(b.dataset.tog).checked||(b.dataset.tog==='timed'&&isAI));
   $('togTimed').disabled=isAI;
   const inR=!!M;$('inRoom').hidden=!inR;$('bJoin').hidden=inR;$('code').disabled=inR;$('bRand').disabled=inR;$('bRoomBack').hidden=inR;
