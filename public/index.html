@@ -178,6 +178,17 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
 .nick:focus{background:#fff7c2;box-shadow:0 0 0 2px var(--acc)}
 .tag.me .pen{width:14px;height:14px;flex:none;opacity:.55}
 @media(max-width:600px){.menu{padding:7px;gap:6px}.msel label{flex-direction:column;align-items:stretch;gap:2px}.msel select{max-width:none;min-height:32px;font-size:13px}.mbtn{min-height:34px;font-size:13px}}
+.menu{container-type:inline-size;justify-content:safe center;scrollbar-width:none;gap:clamp(4px,3cqi,8px);padding:clamp(6px,4cqi,10px)}.menu::-webkit-scrollbar{display:none}
+.msel label{flex-direction:column;align-items:stretch;gap:2px;font-size:clamp(11px,5.5cqi,13px)}
+.msel select{max-width:none;width:100%;min-height:clamp(30px,14cqi,36px);font-size:clamp(12px,6.2cqi,15px);padding:0 4px}
+.mtog button{font-size:clamp(11px,6cqi,13px);min-height:clamp(28px,13cqi,32px)}
+.start{font-size:clamp(18px,14cqi,34px);min-height:clamp(40px,21cqi,60px);letter-spacing:.03em;margin:2px 0}
+.mbtn{font-size:clamp(12px,6.6cqi,15px);min-height:clamp(30px,14cqi,38px)}
+.mmsg{font-size:clamp(11px,6cqi,14px);padding:3px 6px}
+.mtxt{font-size:clamp(11px,5.6cqi,13px)}
+.msel label span{display:block}
+@container (max-width:190px){.msel label span{display:none}.msel{gap:5px}}
+.mcode input,.mcode button{min-height:clamp(32px,15cqi,38px);font-size:clamp(12px,6cqi,15px)}
 @media(hover:hover) and (pointer:fine){.pad,.padhint,.gz,.ctlrow{display:none!important}}
 @media(max-width:600px){.unit{border-radius:16px;padding:6px 4px}.pod.l{margin-right:3px}.pod.r{margin-left:3px}}
 @media(prefers-reduced-motion:reduce){.pop.on{animation:none;opacity:1}.meter i{transition:none}}
@@ -215,8 +226,8 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
           <div class="mmsg" id="menuMsg" hidden></div>
           <div class="pane" data-pane="main">
             <div class="msel">
-              <label>對手<select id="foe"><option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option><option value="cpu">練習（定時丟垃圾）</option><option value="none">無對手</option></select></label>
-              <label>AI 人數<select id="ainum"><option value="1">1（1 對 1）</option><option value="2">2（3 人戰）</option><option value="3">3（4 人戰）</option><option value="4">4（5 人戰）</option><option value="5">5（6 人戰）</option></select></label>
+              <label><span>對手</span><select id="foe" aria-label="對手"><option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option><option value="cpu">練習模式</option><option value="none">無對手</option></select></label>
+              <label><span>AI 人數</span><select id="ainum" aria-label="AI 人數"><option value="1">1 對 1</option><option value="2">2 AI・3 人戰</option><option value="3">3 AI・4 人戰</option><option value="4">4 AI・5 人戰</option><option value="5">5 AI・6 人戰</option></select></label>
             </div>
             <div class="mtog"><button data-tog="dig">挖掘地圖</button><button data-tog="timed" id="togTimed">限時</button></div>
             <button class="start" id="bSolo">START</button>
