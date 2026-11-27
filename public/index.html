@@ -59,6 +59,7 @@ main{max-width:980px;margin:0 auto;padding:0 max(2vw,8px) 40px}
 .oppname{margin-top:6px;max-width:var(--oppw);font-weight:900;font-size:clamp(11px,2.8vw,14px);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .oppempty{position:absolute;inset:3px;display:grid;place-items:center;text-align:center;color:#8e95a3;font-weight:800;font-size:clamp(11px,2.8vw,14px);padding:6px}
 .oppempty[hidden]{display:none}
+.oppempty.rdy{background:rgba(20,40,10,.72);color:#8dff3a;font:400 clamp(20px,6vw,34px)/1.1 "Lilita One",Rubik,sans-serif;-webkit-text-stroke:4px #0f2008;paint-order:stroke fill}
 .beam{position:fixed;z-index:9;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;display:grid;place-items:center;font:400 14px "Lilita One";color:#3a1600;border:2px solid var(--line);background:radial-gradient(circle at 35% 30%,#fff 0,#ffe066 35%,#ff9a1a 75%);box-shadow:0 0 16px 5px rgba(255,200,60,.7);transition:transform .45s cubic-bezier(.5,0,.8,.6),opacity .45s}
 .ov{position:absolute;inset:3px 12px 3px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(14,15,18,.82);color:#fff;border-radius:8px;padding:10px}
 .ov[hidden]{display:none}
@@ -345,7 +346,7 @@ function lockPiece(){
 }
 function finishClear(){const rows=g.clearing.rows;g.board=g.board.filter((_,i)=>!rows.includes(i));
   let k=0;while(k<rows.length&&g.board.length&&g.board[g.board.length-1].every(v=>v===8)){g.board.pop();k++;for(let c=0;c<COLS;c++)P.push({x:c+.5,y:ROWS-1-k+1.5,vx:(Math.random()-.5)*.02,vy:-.004-Math.random()*.012,life:0,max:450+Math.random()*300,col:COL[8]})}
-  while(g.board.length<ROWS)g.board.unshift(Array(COLS).fill(0));g.clearing=null;next()}
+  while(g.board.length<ROWS)g.board.unshift(Array(COLS).fill(0));g.clearing=null;applyGarbage();if(g.topout){ko();return}next()}
 function applyGarbage(){let cap=8;if(g.incoming.length){shake=Math.max(shake,5+Math.min(8,g.incoming.reduce((a,e)=>a+e.n,0)));SND.garb();const mt=$('meter').parentNode;mt.classList.remove('hit');void mt.offsetWidth;mt.classList.add('hit')}while(cap>0&&g.incoming.length){const e=g.incoming[0],k=Math.min(cap,e.n);for(let i=0;i<k;i++){const top=g.board.shift();if(top.some(v=>v))g.topout=true;g.board.push(Array(COLS).fill(8))}e.n-=k;cap-=k;if(!e.n)g.incoming.shift()}}
 
 function update(dt){
@@ -433,7 +434,7 @@ function draw(){
   mini($('nextCv'),(g.queue||[]).slice(0,5),false);
   const inc=(g.incoming||[]).reduce((a,e)=>a+e.n,0),mh=Math.min(100,inc*5)+'%';if(TX.meter!==mh){TX.meter=mh;$('meter').style.height=mh}
   setT('sScore',g.score||0);setT('sLines',g.lines||0);setT('sSent',g.sent||0);setT('sLv',1+Math.floor((g.lines||0)/10));
-  const sec=g.timed?Math.ceil((g.timeLeft||0)/1000):Math.floor((g.t||0)/1000);setT('sKOme',ai&&g.mode==='solo'?ai.deaths:g.mode==='online'&&opp?((opp.presence&&opp.presence.d)|0):0);setT('sKOop',g.deaths||0);setT('meName',nick());if(ai&&g.mode==='solo')setT('oppName',ai.cfg.name+(ai.resp>0?'・KO':''));else if(!M)setT('oppName','—');setT('opTag',ai&&g.mode==='solo'?ai.cfg.name:opp?(typeof (opp.presence||{}).n==='string'?opp.presence.n.slice(0,12):'對手'):(M?'等待對手':'練習'));const oe=$('oppEmpty'),ot=opp||(ai&&g.mode==='solo')?'':(M?'等待對手進房…':'單人練習中');if(TX.oe!==ot){TX.oe=ot;oe.textContent=ot;oe.hidden=!ot}setT('sTime',Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'));setT('sWins',wins);
+  const sec=g.timed?Math.ceil((g.timeLeft||0)/1000):Math.floor((g.t||0)/1000);setT('sKOme',ai&&g.mode==='solo'?ai.deaths:g.mode==='online'&&opp?((opp.presence&&opp.presence.d)|0):0);setT('sKOop',g.deaths||0);setT('meName',nick());if(ai&&g.mode==='solo')setT('oppName',ai.cfg.name+(ai.resp>0?'・KO':''));else if(!M)setT('oppName','—');setT('opTag',ai&&g.mode==='solo'?ai.cfg.name:opp?(typeof (opp.presence||{}).n==='string'?opp.presence.n.slice(0,12):'對手'):(M?'等待對手':'練習'));const oe=$('oppEmpty'),ost=opp&&g.over?((opp.presence||{}).st||'idle'):'',ot=ost?(ost==='ready'?'✔ 已準備':ost==='play'?'':'尚未準備'):opp||(ai&&g.mode==='solo')?'':(M?'等待對手進房…':'單人練習中');if(TX.oe!==ot+ost){TX.oe=ot+ost;oe.textContent=ot;oe.hidden=!ot;oe.classList.toggle('rdy',ost==='ready')}setT('sTime',Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'));setT('sWins',wins);
 }
 function mini(c,list,dim){
   fit(c);const key=list.join('')+dim+c.width;if(c._key===key)return;c._key=key;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!list.length)return;
@@ -587,10 +588,11 @@ function zone(el,h){let id=null,st=null;
   el.addEventListener('contextmenu',e=>e.preventDefault())}
 zone($('zl'),{
   move(st,x,y){if(!live())return;const k=stepPx(),dx=x-st.x0,dy=y-st.y0;
-    if(!st.mode&&Math.hypot(dx,dy)>10)st.mode=Math.abs(dx)>=Math.abs(dy)?'h':'v';
-    if(st.mode==='h'){while(x-st.sx>=k){if(move(1))SND.move();st.sx+=k}while(st.sx-x>=k){if(move(-1))SND.move();st.sx-=k}}
-    else if(st.mode==='v'){while(y-st.sy>=k){softStep();st.sy+=k}}},
-  up(st,x,y,dt){if(!live())return;const dx=x-st.x0,dy=y-st.y0;if(dy>40&&dy>Math.abs(dx)*1.4&&dy/dt>.8)hardDrop();else if(dy<-30&&-dy>Math.abs(dx)*1.4)holdP()}
+    let hm=false;
+    while(x-st.sx>=k){if(move(1))SND.move();st.sx+=k;hm=true}while(st.sx-x>=k){if(move(-1))SND.move();st.sx-=k;hm=true}
+    if(hm){st.sy=Math.max(st.sy,y-k*.5);st.h=(st.h||0)+1}
+    else{const vk=k*1.15;while(y-st.sy>=vk){softStep();st.sy+=vk;st.sx=x}}},
+  up(st,x,y,dt){if(!live())return;const dx=x-st.x0,dy=y-st.y0;if(!st.h&&dy>40&&dy>Math.abs(dx)*1.4&&dy/dt>.8)hardDrop();else if(dy<-30&&-dy>Math.abs(dx)*1.4)holdP()}
 });
 zone($('zr'),{
   up(st,x,y,dt){if(!live())return;const dx=x-st.x0,dy=y-st.y0,d=Math.hypot(dx,dy);
@@ -676,7 +678,7 @@ setInterval(()=>{if(M&&g.mode==='online'&&g.running)pres({b:enc(),d:g.deaths,s:g
 /* ---------- 主迴圈 ---------- */
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(100,now-last);last=now;try{update(dt)}catch(e){console.error(e)}try{draw();drawOpp()}catch(e){console.error(e)}}
-reset('solo');requestAnimationFrame(loop);
+reset('solo');g.over=true;requestAnimationFrame(loop);
 }
 </script>
 </body>
