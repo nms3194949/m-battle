@@ -340,13 +340,17 @@ function lockPiece(){
     if(n>=4||ts)shake=Math.max(shake,n>=4?9:7);
     SND.clear(n,g.combo,n>=4||ts);g.clearing={rows:full,t:0};return;
   }
-  applyGarbage();
   if(g.topout){ko();return}
   next();
 }
 function finishClear(){const rows=g.clearing.rows;g.board=g.board.filter((_,i)=>!rows.includes(i));
   let k=0;while(k<rows.length&&g.board.length&&g.board[g.board.length-1].every(v=>v===8)){g.board.pop();k++;for(let c=0;c<COLS;c++)P.push({x:c+.5,y:ROWS-1-k+1.5,vx:(Math.random()-.5)*.02,vy:-.004-Math.random()*.012,life:0,max:450+Math.random()*300,col:COL[8]})}
-  while(g.board.length<ROWS)g.board.unshift(Array(COLS).fill(0));g.clearing=null;applyGarbage();if(g.topout){ko();return}next()}
+  while(g.board.length<ROWS)g.board.unshift(Array(COLS).fill(0));g.clearing=null;next()}
+function riseNow(){let n=0;while(g.incoming.length&&g.incoming[0].due<=g.t)n+=g.incoming.shift().n;if(!n)return;n=Math.min(n,20);
+  shake=Math.max(shake,5+Math.min(8,n));SND.garb();const mt=$('meter').parentNode;mt.classList.remove('hit');void mt.offsetWidth;mt.classList.add('hit');
+  let top=false;for(let i=0;i<n;i++){if(g.board.shift().some(v=>v))top=true;g.board.push(Array(COLS).fill(8))}
+  const p=g.cur;if(p){let k=0;while(hit(p.t,p.r,p.x,p.y)&&k<=n){p.y--;k++}if(hit(p.t,p.r,p.x,p.y)){ko();return}}
+  if(top){ko();return}}
 function applyGarbage(){let cap=8;if(g.incoming.length){shake=Math.max(shake,5+Math.min(8,g.incoming.reduce((a,e)=>a+e.n,0)));SND.garb();const mt=$('meter').parentNode;mt.classList.remove('hit');void mt.offsetWidth;mt.classList.add('hit')}while(cap>0&&g.incoming.length){const e=g.incoming[0],k=Math.min(cap,e.n);for(let i=0;i<k;i++){const top=g.board.shift();if(top.some(v=>v))g.topout=true;g.board.push(Array(COLS).fill(8))}e.n-=k;cap-=k;if(!e.n)g.incoming.shift()}}
 
 function update(dt){
@@ -356,7 +360,8 @@ function update(dt){
     setPhase(g.timeLeft>60000?'':g.timeLeft>20000?'warm':'hot');if(g.timeLeft<=0){g.timeLeft=0;timeUp();return}}
   try{aiStep(dt)}catch(e){console.error(e)}
   if(g.respawn>0){g.respawn-=dt;if(g.respawn<=0)respawn();return}
-  if(g.mode==='solo'&&$('foe').value==='cpu'){cpuT-=dt;if(cpuT<=0){{const n=1+rnd(3);g.incoming.push({n,h:g.hole});incomingFx(n)}cpuT=6000+rnd(5000)}}
+  if(g.mode==='solo'&&$('foe').value==='cpu'){cpuT-=dt;if(cpuT<=0){{const n=1+rnd(3);g.incoming.push({n,h:g.hole,due:g.t+520});incomingFx(n)}cpuT=6000+rnd(5000)}}
+  if(!g.clearing&&g.incoming.length&&g.incoming[0].due<=g.t)riseNow();
   if(g.clearing){g.clearing.t+=dt;if(g.clearing.t>=CLR)finishClear();return}
   if(!g.cur)return;
   if(held){das+=dt;if(das>=DAS){arr+=dt;while(arr>=ARR){arr-=ARR;if(!move(held)){arr=0;break}}}}
@@ -507,6 +512,8 @@ function aiKO(){ai.deaths++;stamp($('ostamp'));$('oppCv')._key=null;ai.board=emp
 function aiStep(dt){
   if(!ai||g.mode!=='solo')return;
   if(ai.resp>0){ai.resp-=dt;return}
+  {const now=performance.now();let n=0;while(ai.incoming.length&&ai.incoming[0].due<=now)n+=ai.incoming.shift().n;
+    if(n){let top=false;for(let i=0;i<Math.min(n,20);i++){if(ai.board.shift().some(v=>v))top=true;ai.board.push(Array(COLS).fill(8))}if(top){aiKO();return}}}
   ai.next-=dt;if(ai.next>0)return;ai.next=ai.cfg.ms*(.75+Math.random()*.5);
   while(ai.queue.length<7){const b=[...NAMES];for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]]}ai.queue.push(...b)}
   const t=ai.queue.shift(),B=ai.board,sx=t==='O'?4:3;
@@ -520,11 +527,10 @@ function aiStep(dt){
   const full=[];for(let r=0;r<ROWS;r++)if(b[r].every(v=>v)&&!b[r].every(v=>v===8))full.push(r);const n=full.length;
   if(n){b=b.filter((_,i)=>!full.includes(i));let k=0;while(k<n&&b.length&&b[b.length-1].every(v=>v===8)){b.pop();k++}while(b.length<ROWS)b.unshift(Array(COLS).fill(0));
     let a=[0,0,1,2,4][n];const hard=n===4;if(hard&&ai.b2b)a+=1;ai.b2b=hard;ai.combo++;a+=COMBO[Math.min(ai.combo,COMBO.length-1)];ai.lines+=n;
-    while(a>0&&ai.incoming.length){const q=Math.min(a,ai.incoming[0]);a-=q;ai.incoming[0]-=q;if(!ai.incoming[0])ai.incoming.shift()}
-    if(a>0){ai.sent+=a;g.incoming.push({n:a,h:g.hole});incomingFx(a)}
+    while(a>0&&ai.incoming.length){const q=Math.min(a,ai.incoming[0].n);a-=q;ai.incoming[0].n-=q;if(!ai.incoming[0].n)ai.incoming.shift()}
+    if(a>0){ai.sent+=a;g.incoming.push({n:a,h:g.hole,due:g.t+520});incomingFx(a)}
     showLabel($('oclabel'),['','SINGLE','DOUBLE','TRIPLE','QUAD'][n],'',hard&&ai.b2b&&n===4&&false);if(ai.combo>=1)showCombo($('ocombo'),ai.combo);
-  }else{ai.combo=-1;let cap=8,top=false;while(cap>0&&ai.incoming.length){const q=Math.min(cap,ai.incoming[0]);for(let i=0;i<q;i++){if(b.shift().some(v=>v))top=true;b.push(Array(COLS).fill(8))}ai.incoming[0]-=q;cap-=q;if(!ai.incoming[0])ai.incoming.shift()}
-    ai.board=b;if(top||b.slice(0,HID).some(r=>r.some(v=>v))){aiKO();return}}
+  }else{ai.combo=-1;ai.board=b;if(b.slice(0,HID).some(r=>r.some(v=>v))){aiKO();return}}
   ai.board=b;
 }
 const aiEnc=()=>ai.board.slice(HID).map(r=>r.join('')).join('');
@@ -671,8 +677,8 @@ function peersChanged(ps){
 function maybeGo(){if(!M||!opp||!me||!ready||goSent)return;if((opp.presence||{}).st==='ready'&&me<opp.peer){goSent=true;M.emit('go',{a:me,b:opp.peer,dig:$('dig').checked}).catch(()=>{goSent=false})}}
 function onGo(m){const d=m.data||{};if(!ready)return;if(!(m.sameTab||(opp&&m.peer===opp.peer)))return;if(d.a!==me&&d.b!==me)return;begin(d.dig)}
 function begin(dig){if(dig===undefined)dig=me<(opp?opp.peer:'')?$('dig').checked:!!((opp&&opp.presence)||{}).dg;ready=false;goSent=false;$('bReady').textContent='準備';startGame('online',{timed:true,dig})}
-function onAtk(m){if(m.sameTab||!g.running||g.mode!=='online'||!opp||m.peer!==opp.peer)return;const d=m.data||{};if(d.to!==me)return;const n=Math.max(1,Math.min(20,d.n|0));g.incoming.push({n,h:g.hole});incomingFx(n)}
-function sendAtk(a){beam(a);SND.atk();if(ai&&g.mode==='solo')ai.incoming.push(a);if(g.mode==='online'&&M&&opp)M.emit('atk',{to:opp.peer,n:a}).catch(()=>{})}
+function onAtk(m){if(m.sameTab||!g.running||g.mode!=='online'||!opp||m.peer!==opp.peer)return;const d=m.data||{};if(d.to!==me)return;const n=Math.max(1,Math.min(20,d.n|0));g.incoming.push({n,h:g.hole,due:g.t+520});incomingFx(n)}
+function sendAtk(a){beam(a);SND.atk();if(ai&&g.mode==='solo')ai.incoming.push({n:a,due:performance.now()+520});if(g.mode==='online'&&M&&opp)M.emit('atk',{to:opp.peer,n:a}).catch(()=>{})}
 setInterval(()=>{if(M&&g.mode==='online'&&g.running)pres({b:enc(),d:g.deaths,s:g.sent,l:g.lines,h:height()})},250);
 
 /* ---------- 主迴圈 ---------- */
