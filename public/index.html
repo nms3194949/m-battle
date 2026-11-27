@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>M Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -17,6 +17,7 @@
 :root[data-phase=warm]{--sky1:#ffc23a;--sky2:#fff38a}:root[data-phase=hot]{--sky1:#ff7aa8;--sky2:#ffd0dc}
 @media(min-width:820px){:root{--cvw:min(300px,calc((100svh - 270px)/2));--oppw:calc(var(--cvw)*.82)}}
 *{box-sizing:border-box;min-width:0}
+html,body,button,canvas,.arena,.hud{touch-action:manipulation}
 body{margin:0;min-height:100svh;color:var(--ink);font:16px/1.5 Rubik,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent;
   background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 18px,transparent 18px 36px),linear-gradient(170deg,var(--sky1),var(--sky2)) fixed;transition:background-color .5s}
 header{padding:12px max(3vw,10px) 6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
@@ -560,6 +561,8 @@ function release(k){if(k==='D')padSoft=false;if((k==='L'&&held===-1)||(k==='R'&&
 const KEYS={ArrowLeft:'L',ArrowRight:'R',ArrowDown:'D',Space:'HD',ArrowUp:'CW',KeyX:'CW',KeyZ:'CCW',ControlLeft:'CCW',KeyC:'H',ShiftLeft:'H',ShiftRight:'H'};
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=KEYS[e.code];if(!k)return;e.preventDefault();if(!e.repeat)press(k)});
 addEventListener('keyup',e=>{const k=KEYS[e.code];if(k)release(k)});
+for(const el of[$('gz'),$('pad')])el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener('dblclick',e=>{if(e.target.closest('main'))e.preventDefault()},{passive:false});
 let lastDTap=0,padSoft=false;
 for(const b of document.querySelectorAll('.pad button')){const k=b.dataset.k;
   b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}
