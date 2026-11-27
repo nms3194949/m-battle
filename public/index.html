@@ -60,6 +60,29 @@ main{max-width:980px;margin:0 auto;padding:0 max(2vw,8px) 40px}
 .oppempty{position:absolute;inset:3px;display:grid;place-items:center;text-align:center;color:#8e95a3;font-weight:800;font-size:clamp(11px,2.8vw,14px);padding:6px}
 .oppempty[hidden]{display:none}
 .oppempty.rdy{background:rgba(20,40,10,.72);color:#8dff3a;font:400 clamp(20px,6vw,34px)/1.1 "Lilita One",Rubik,sans-serif;-webkit-text-stroke:4px #0f2008;paint-order:stroke fill}
+.foes{display:grid;gap:6px;justify-items:center;align-items:start}
+.foes.multi{grid-template-columns:repeat(2,minmax(0,1fr))}
+.foe{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:0;-webkit-tap-highlight-color:transparent}
+.fw{position:relative;background:#0e0f12;border-radius:10px;padding:3px;box-shadow:inset 0 0 0 2px #4a4f5a;transition:box-shadow .15s}
+.foe canvas{display:block;aspect-ratio:1/2;border-radius:5px}
+.foes.one canvas{width:var(--oppw)}
+.foes.multi canvas{width:calc((var(--oppw) - 16px)/2)}
+@media(min-width:820px){.foes.many{grid-template-columns:repeat(3,minmax(0,1fr))}.foes.many canvas{width:calc(var(--oppw)*.44)}}
+.foe.tg .fw{box-shadow:inset 0 0 0 2px #26d4ff,0 0 0 3px #26d4ff,0 0 14px #26d4ff}
+.ret{position:absolute;left:50%;top:46%;width:58%;max-width:64px;transform:translate(-50%,-50%);pointer-events:none;opacity:0;z-index:3}
+.foe.tg .ret{opacity:.95;animation:ret 1.3s ease-in-out infinite}
+@keyframes ret{50%{transform:translate(-50%,-50%) scale(.82) rotate(45deg)}}
+.kob{position:absolute;right:-7px;bottom:-7px;min-width:24px;height:24px;padding:0 4px;border-radius:12px;background:#ff3d4d;border:2px solid #fff;box-shadow:0 0 0 2px var(--line);color:#fff;font:400 14px/20px "Lilita One",Rubik,sans-serif;text-align:center;z-index:6}
+.kob[hidden]{display:none}
+.plb{position:absolute;inset:0;display:none;place-items:center;font:400 clamp(18px,5vw,36px)/1 "Lilita One",Rubik,sans-serif;color:#fff;-webkit-text-stroke:5px #0b3a8a;paint-order:stroke fill;z-index:5;background:radial-gradient(circle,rgba(40,130,255,.75) 0 34%,rgba(40,130,255,0) 36%)}
+.foe.out{cursor:default}.foe.out .plb{display:grid}
+.fname{font-weight:900;font-size:clamp(10px,2.6vw,13px);color:#fff;margin-top:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.foes.multi .kob{min-width:18px;height:18px;font-size:11px;line-height:14px;right:-5px;bottom:-5px;border-radius:9px}
+@media(max-width:600px){.foes.multi .clabel.sm{display:none}}
+.foes.multi .stamp.sm{font-size:clamp(16px,4.6vw,32px);-webkit-text-stroke:4px #2a0508}
+.foes.multi .clabel.sm{font-size:clamp(9px,2.3vw,13px);right:-4px;bottom:-4px;-webkit-text-stroke:3px #0f2008}
+.foes.multi .combo.sm b{font-size:clamp(18px,4.6vw,30px)}.foes.multi .combo.sm span{font-size:clamp(7px,1.8vw,11px)}
+.foes.multi .oppempty.rdy{font-size:clamp(12px,3.2vw,18px)}
 .beam{position:fixed;z-index:9;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;display:grid;place-items:center;font:400 14px "Lilita One";color:#3a1600;border:2px solid var(--line);background:radial-gradient(circle at 35% 30%,#fff 0,#ffe066 35%,#ff9a1a 75%);box-shadow:0 0 16px 5px rgba(255,200,60,.7);transition:transform .45s cubic-bezier(.5,0,.8,.6),opacity .45s}
 .ov{position:absolute;inset:3px 12px 3px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(14,15,18,.82);color:#fff;border-radius:8px;padding:10px}
 .ov[hidden]{display:none}
@@ -139,7 +162,7 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
 </style>
 </head>
 <body>
-<header><h1>M Battle</h1><small>原型 v0.4</small><div class="snd"><button id="bSfx">音效 開</button><button id="bMus">音樂 開</button></div></header>
+<header><h1>M Battle</h1><small>原型 v0.5</small><div class="snd"><button id="bSfx">音效 開</button><button id="bMus">音樂 開</button></div></header>
 <main>
   <div class="hud">
     <div class="tag me"><i id="sKOme">0</i><span id="meName">你</span></div>
@@ -175,8 +198,7 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
     </div>
     <div class="unit opp">
       <div class="lab">對手</div>
-      <div class="oppwell"><canvas id="oppCv"></canvas><div class="oppempty" id="oppEmpty">單人練習中</div><div class="combo sm" id="ocombo"><b></b><span>COMBO!</span></div><div class="stamp sm" id="ostamp">K.O.</div><div class="clabel sm" id="oclabel"></div></div>
-      <div class="oppname" id="oppName">—</div>
+      <div class="foes one" id="foes"></div>
     </div>
   </div>
 
@@ -205,12 +227,16 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
       <label class="chk">對手 <select id="foe">
         <option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option>
         <option value="cpu">定時丟垃圾（不比賽）</option><option value="none">無對手</option></select></label>
-      <label class="chk"><input type="checkbox" id="timed"> 限時 2 分鐘（被 KO 會重生；選 AI 對手時固定開啟）</label></div>
+      <label class="chk">AI 人數 <select id="ainum"><option value="1" selected>1（1 對 1）</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5（6 人混戰）</option></select></label>
+      <label class="chk"><input type="checkbox" id="timed"> 限時 2 分鐘（選 AI 對手時固定開啟；1 對 1 被 KO 重生，3 人以上被 KO 出局）</label></div>
     <label class="chk"><input type="checkbox" id="dig"> 挖掘地圖：開局底部有 6 排灰色（單人、對戰都適用，對戰以房主設定為準）</label>
     <p class="status">灰色排是實心的，不能直接消掉；你每消一行，最底下就會降掉一排灰色。</p>
-    <h3>線上對戰（雙人・2 分鐘・比 KO 數）</h3>
+    <h3>線上對戰（最多 6 人・2 分鐘）</h3>
+    <div class="row"><button class="go" id="bQuick">快速配對</button><span class="status">自動找對手，約 10 秒內開局，不足 6 人用 AI 補位</span></div>
     <div class="row"><input id="nick" maxlength="12" placeholder="暱稱"><input id="code" maxlength="8" placeholder="房號（英數）" autocapitalize="off"></div>
     <div class="row"><button id="bRand">隨機房號</button><button id="bJoin">進房</button><button class="go" id="bReady" disabled>準備</button><button id="bInv" hidden>複製邀請連結</button></div>
+    <label class="chk"><input type="checkbox" id="fill"> 人數不足時用 AI 補到 6 人（房主電腦負責跑 AI）</label>
+    <p class="status">準心：點對手的盤面選擇攻擊目標（鍵盤 Tab 切換）。3 人以上被 KO 就出局，最後存活或時間到依 KO、消行、高度排名。</p>
     <p class="status" id="st">連線中…</p>
   </section>
   <p class="keys">鍵盤：← → 移動・↓ 加速・空白鍵 落下・↑ / X 順轉・Z 逆轉・C / Shift 暫存</p>
@@ -356,7 +382,7 @@ function lockPiece(){
 function finishClear(){const rows=g.clearing.rows;g.board=g.board.filter((_,i)=>!rows.includes(i));
   let k=0;while(k<rows.length&&g.board.length&&g.board[g.board.length-1].every(v=>v===8)){g.board.pop();k++;for(let c=0;c<COLS;c++)P.push({x:c+.5,y:ROWS-1-k+1.5,vx:(Math.random()-.5)*.02,vy:-.004-Math.random()*.012,life:0,max:450+Math.random()*300,col:COL[8]})}
   while(g.board.length<ROWS)g.board.unshift(Array(COLS).fill(0));g.clearing=null;next()}
-function riseNow(){let n=0;while(g.incoming.length&&g.incoming[0].due<=g.t)n+=g.incoming.shift().n;if(!n)return;n=Math.min(n,20);
+function riseNow(){let n=0;while(g.incoming.length&&g.incoming[0].due<=g.t){const e=g.incoming.shift();n+=e.n;if(e.from)g.lastHit={id:e.from,t:g.t}}if(!n)return;n=Math.min(n,20);
   shake=Math.max(shake,5+Math.min(8,n));SND.garb();const mt=$('meter').parentNode;mt.classList.remove('hit');void mt.offsetWidth;mt.classList.add('hit');
   let top=false;for(let i=0;i<n;i++){if(g.board.shift().some(v=>v))top=true;g.board.push(Array(COLS).fill(8))}
   const p=g.cur;if(p){let k=0;while(hit(p.t,p.r,p.x,p.y)&&k<=n){p.y--;k++}if(hit(p.t,p.r,p.x,p.y)){ko();return}}
@@ -368,7 +394,9 @@ function update(dt){
   g.t+=dt;
   if(g.timed){const before=Math.ceil(g.timeLeft/1000);g.timeLeft-=dt;const after=Math.ceil(g.timeLeft/1000);if(after<before&&after<=10&&after>0)SND.tick();
     setPhase(g.timeLeft>60000?'':g.timeLeft>20000?'warm':'hot');if(g.timeLeft<=0){g.timeLeft=0;timeUp();return}}
-  try{aiStep(dt)}catch(e){console.error(e)}
+  try{aisStep(dt)}catch(e){console.error(e)}
+  if(g.elim&&checkEnd())return;
+  if(g.out)return;
   if(g.respawn>0){g.respawn-=dt;if(g.respawn<=0)respawn();return}
   if(g.mode==='solo'&&$('foe').value==='cpu'){cpuT-=dt;if(cpuT<=0){{const n=1+rnd(3);g.incoming.push({n,h:g.hole,due:g.t+520});incomingFx(n)}cpuT=6000+rnd(5000)}}
   if(!g.clearing&&g.incoming.length&&g.incoming[0].due<=g.t)riseNow();
@@ -449,7 +477,9 @@ function draw(){
   mini($('nextCv'),(g.queue||[]).slice(0,5),false);
   const inc=(g.incoming||[]).reduce((a,e)=>a+e.n,0),mh=Math.min(100,inc*5)+'%';if(TX.meter!==mh){TX.meter=mh;$('meter').style.height=mh}
   setT('sScore',g.score||0);setT('sLines',g.lines||0);setT('sSent',g.sent||0);setT('sLv',1+Math.floor((g.lines||0)/10));
-  const sec=g.timed?Math.ceil((g.timeLeft||0)/1000):Math.floor((g.t||0)/1000);setT('sKOme',ai&&g.mode==='solo'?ai.deaths:g.mode==='online'&&opp?((opp.presence&&opp.presence.d)|0):0);setT('sKOop',g.deaths||0);setT('meName',nick());if(ai&&g.mode==='solo')setT('oppName',ai.cfg.name+(ai.resp>0?'・KO':''));else if(!M)setT('oppName','—');setT('opTag',ai&&g.mode==='solo'?ai.cfg.name:opp?(typeof (opp.presence||{}).n==='string'?opp.presence.n.slice(0,12):'對手'):(M?'等待對手':'練習'));const oe=$('oppEmpty'),ost=opp&&g.over?((opp.presence||{}).st||'idle'):'',ot=ost?(ost==='ready'?'✔ 已準備':ost==='play'?'':'尚未準備'):opp||(ai&&g.mode==='solo')?'':(M?'等待對手進房…':'單人練習中');if(TX.oe!==ot+ost){TX.oe=ot+ost;oe.textContent=ot;oe.hidden=!ot;oe.classList.toggle('rdy',ost==='ready')}setT('sTime',Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'));setT('sWins',wins);
+  const sec=g.timed?Math.ceil((g.timeLeft||0)/1000):Math.floor((g.t||0)/1000);
+  {const all=everyone(),tg=g.running&&!g.out?curTarget(all.slice(1)):null;setT('sKOme',koOf(myId(),all));setT('opTag',tg?tg.name:M?'等待對手':AIS.length?AIS[0].name:'練習');setT('sKOop',tg?koOf(tg.id,all):0);setT('meName',nick())}
+  setT('sTime',Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'));setT('sWins',wins);
 }
 function mini(c,list,dim){
   fit(c);const key=list.join('')+dim+c.width;if(c._key===key)return;c._key=key;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!list.length)return;
@@ -461,10 +491,34 @@ function mini(c,list,dim){
     m.forEach((row,i)=>row.forEach((q,j)=>{if(q)cell(x,ox+(j-a)*s,oy+(i-u)*s,s,COL[NAMES.indexOf(t)+1])}))});
   x.globalAlpha=1;
 }
-function drawOpp(){
-  const c=$('oppCv');fit(c);const b=ai&&g.mode==='solo'?aiEnc():opp&&opp.presence&&opp.presence.b,key=String(b)+c.width;if(c._key===key)return;c._key=key;
-  const x=c.getContext('2d'),s=c.width/COLS;x.drawImage(tiles(c.width,c.height,s),0,0);
-  if(typeof b==='string'&&/^[0-8]{200}$/.test(b))for(let i=0;i<200;i++){const v=+b[i];if(v)cell(x,(i%COLS)*s,Math.floor(i/COLS)*s,s,COL[v])}
+/* 對手盤面卡片（1 人大盤、2–5 人網格） */
+const cards=new Map();
+const RET='<svg class="ret" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="none" stroke="#0b1b3a" stroke-width="7"/><circle cx="20" cy="20" r="13" fill="none" stroke="#26d4ff" stroke-width="3.5"/><path d="M20 2v10M20 28v10M2 20h10M28 20h10" stroke="#0b1b3a" stroke-width="7" stroke-linecap="round"/><path d="M20 2v10M20 28v10M2 20h10M28 20h10" stroke="#26d4ff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="20" r="3" fill="#26d4ff"/></svg>';
+function clearCards(){cards.clear();const b=$('foes');if(b)b.textContent=''}
+function mkCard(id){const c=document.createElement('div');c.className='foe';c.innerHTML='<div class="fw"><canvas></canvas>'+RET+'<div class="kob">0</div><div class="plb"></div><div class="stamp sm">K.O.</div><div class="clabel sm fade"></div><div class="combo sm"><b></b><span>COMBO!</span></div><div class="oppempty" hidden></div></div><div class="fname"></div>';
+  c.addEventListener('click',()=>setTarget(id));c._cv=c.querySelector('canvas');c._dl=0;c._lq=null;return c}
+function cardCv(id){const c=cards.get(id);return c?c._cv:($('foes')||cv)}
+function drawFoes(){
+  const box=$('foes');if(!box)return;const list=foes(),all=g.running||g.over?[meP(),...list]:list,n=list.length;
+  const cls='foes '+(n<=1?'one':'multi')+(n>=3?' many':'');if(box.className!==cls){box.className=cls;for(const c of cards.values())c._cv._key=null}
+  const tgt=g.running&&!g.out?curTarget(list):null;
+  if(!n){let e=cards.get('_empty');if(!e){clearCards();e=mkCard('_empty');cards.set('_empty',e);box.appendChild(e)}
+    const t=M?'等待對手進房…':'單人練習中',oe=e.querySelector('.oppempty');if(oe.textContent!==t)oe.textContent=t;oe.hidden=false;e.querySelector('.kob').hidden=true;e.querySelector('.fname').textContent='—';
+    const c=e._cv;if(fit(c)||c._key!=='e'){c._key='e';const x=c.getContext('2d');x.drawImage(tiles(c.width,c.height,c.width/COLS),0,0)}return}
+  if(cards.has('_empty')){cards.get('_empty').remove();cards.delete('_empty')}
+  const ids=new Set(list.map(f=>f.id));for(const[id,c]of cards)if(!ids.has(id)){c.remove();cards.delete(id)}
+  list.forEach((f,i)=>{let c=cards.get(f.id);if(!c){c=mkCard(f.id);cards.set(f.id,c)}if(box.children[i]!==c)box.insertBefore(c,box.children[i]||null);
+    c.classList.toggle('tg',!!tgt&&tgt.id===f.id);c.classList.toggle('out',!!f.out);
+    const nm=f.name+(f.kind==='net'&&g.over&&f.st==='ready'?'・已準備':'');const fn=c.querySelector('.fname');if(fn.textContent!==nm)fn.textContent=nm;
+    const kb=c.querySelector('.kob'),k=String(koOf(f.id,all));if(kb.textContent!==k)kb.textContent=k;kb.hidden=k==='0';
+    const pb=c.querySelector('.plb'),pt=f.out&&f.pl?ordinal(f.pl):'';if(pb.textContent!==pt)pb.textContent=pt;
+    const dl=(f.dl||[]).length;if(dl>c._dl&&g.running)stamp(c.querySelector('.stamp'));c._dl=dl;
+    if(f.lq!==c._lq){if(c._lq!==null&&typeof f.lb==='string'&&g.running){const parts=f.lb.slice(0,40).split('|'),b2b=parts[0]==='B2B';if(b2b)parts.shift();const txt=parts.slice(1).join(' ').replace(/\n/g,' ').replace(/[^A-Za-z\- ]/g,'').trim();
+      if(txt)showLabel(c.querySelector('.clabel'),txt.replace(' ','\n'),parts[0]==='ts'?'ts':'',b2b);if((f.cb|0)>=1)showCombo(c.querySelector('.combo'),Math.min(99,f.cb|0))}c._lq=f.lq}
+    const oe=c.querySelector('.oppempty'),ot=f.kind==='net'&&g.over?(f.st==='ready'?'✔ 已準備':'尚未準備'):'';if(oe.textContent!==ot){oe.textContent=ot;oe.hidden=!ot;oe.classList.toggle('rdy',f.st==='ready')}
+    const cv2=c._cv;fit(cv2);const key=f.b+'|'+cv2.width+'|'+(f.out?1:0);if(cv2._key!==key){cv2._key=key;const x=cv2.getContext('2d'),s=cv2.width/COLS;x.drawImage(tiles(cv2.width,cv2.height,s),0,0);
+      if(typeof f.b==='string'&&/^[0-8]{200}$/.test(f.b))for(let j=0;j<200;j++){const v=+f.b[j];if(v)cell(x,(j%COLS)*s,Math.floor(j/COLS)*s,s,COL[f.out?8:v])}}
+  });
 }
 function enc(){const rows=g.board.slice(HID).map(r=>r.slice());const p=g.cur;if(p){const m=SH[p.t][p.r];for(let i=0;i<m.length;i++)for(let j=0;j<m.length;j++)if(m[i][j]&&p.y+i>=HID)rows[p.y+i-HID][p.x+j]=NAMES.indexOf(p.t)+1}return rows.map(r=>r.join('')).join('')}
 let popT=0;function pop(t){const e=$('pop');e.textContent=t;e.classList.remove('on');void e.offsetWidth;e.classList.add('on')}
@@ -485,87 +539,125 @@ function fly(from,to,red,n){
       requestAnimationFrame(()=>requestAnimationFrame(()=>{e.style.transform=`translate(${x1-x0+jx}px,${y1-y0+jy}px) rotate(${red?-300:300}deg) scale(1)`;e.style.opacity='.9'}));
       setTimeout(()=>e.remove(),600)},i*70)}catch(_){}
 }
-function beam(n){fly(cv,$('oppCv'),false,n)}
-function incomingFx(n){fly($('oppCv'),$('meter').parentNode,true,n)}
+function beam(n){const t=curTarget();fly(cv,t?cardCv(t.id):$('foes'),false,n)}
+function incomingFx(n,from){fly(from?cardCv(from):$('foes'),$('meter').parentNode,true,n)}
 function setPhase(ph){const r=document.documentElement;if((r.dataset.phase||'')!==ph){if(ph)r.dataset.phase=ph;else delete r.dataset.phase}}
 function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fill(8)}}
 function startGame(mode,opt){
-  opt=opt||{};clearInterval(cdTimer);oppSeen={d:0,lq:null};for(const id of['clabel','oclabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');reset(mode);ai=null;if(mode==='solo'&&AIL[opt.foe]){aiNew(opt.foe,!!opt.dig);opt.timed=true}g.timed=!!opt.timed;g.dig=!!opt.dig;fill();if(g.dig)fillDig();let n=3;overlay(String(n),mode==='online'?'對戰開始・2 分鐘比 KO 數':(g.timed?'限時 2 分鐘':'練習開始'));ac();SND.count(false);
-  cdTimer=setInterval(()=>{n--;if(n>0){overlay(String(n),'');SND.count(false)}else{clearInterval(cdTimer);overlay(null);SND.count(true);g.running=true;next();if(musOn)musStart();if(mode==='online')pres({st:'play',b:enc(),d:0,s:0})}},700);
+  opt=opt||{};clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
+  reset(mode);AIS=[];netAIs=new Map();clearCards();g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
+  if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
+  if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name));else for(const r of ro)netAIs.set(r.id,{name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
+  g.elim=(1+(mode==='solo'?AIS.length:Math.max(1,(opt.humans||2)-1)+(opt.ais||[]).length))>2;
+  g.timed=!!opt.timed;g.dig=!!opt.dig;fill();if(g.dig)fillDig();let n=3;
+  overlay(String(n),mode==='online'?(g.elim?'混戰開始・被 KO 就出局':'對戰開始・2 分鐘比 KO 數'):(AIS.length>1?`${AIS.length+1} 人混戰・被 KO 就出局`:g.timed?'限時 2 分鐘':'練習開始'));ac();SND.count(false);
+  cdTimer=setInterval(()=>{n--;if(n>0){overlay(String(n),'');SND.count(false)}else{clearInterval(cdTimer);overlay(null);SND.count(true);g.running=true;next();if(musOn)musStart();if(mode==='online')pres({st:'play',b:enc(),dl:[],out:false,pl:0,s:0,l:0,h:0})}},700);
 }
-const soloOpt=()=>({timed:$('timed').checked,dig:$('dig').checked,foe:$('foe').value});
+const soloOpt=()=>({timed:$('timed').checked,dig:$('dig').checked,foe:$('foe').value,ainum:+$('ainum').value});
+const ordinal=n=>n+(n===1?'ST':n===2?'ND':n===3?'RD':'TH');
 function ko(){
   SND.ko();shake=10;
-  if(g.timed&&g.running){g.deaths++;g.cur=null;g.clearing=null;g.koT=0;g.respawn=1100;g.incoming=[];stamp($('stamp'));if(g.mode==='online')pres({d:g.deaths,b:enc()});return}
+  if(g.timed&&g.running&&!g.out){const killer=g.lastHit&&g.t-g.lastHit.t<20000?g.lastHit.id:'-';g.dl.push(killer);
+    if(g.elim){g.pl=aliveCount();g.out=true;g.cur=null;g.clearing=null;g.koT=0;g.incoming=[];stamp($('stamp'));setTimeout(()=>{if(g.out&&g.running)overlay(ordinal(g.pl),'你出局了・觀戰到比賽結束')},900);if(g.mode==='online')pres({out:true,pl:g.pl,dl:g.dl,b:enc()});return}
+    g.cur=null;g.clearing=null;g.koT=0;g.respawn=1100;g.incoming=[];stamp($('stamp'));if(g.mode==='online')pres({dl:g.dl,b:enc()});return}
+  if(g.out)return;
   g.running=false;g.over=true;g.cur=null;g.clearing=null;g.koT=0;musStop();setPhase('');stamp($('stamp'));
   overlay('KO',`分數 ${g.score}・消了 ${g.lines} 行・送出 ${g.sent} 攻擊`,'再來一局',()=>startGame('solo',soloOpt()));
 }
 function respawn(){g.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));if(g.dig)fillDig();g.koT=null;g.topout=false;g.combo=-1;g.b2b=false;next()}
-function height(){for(let r=HID;r<ROWS;r++)if(g.board[r].some(v=>v))return ROWS-r;return 0}
-function timeUp(){
-  g.running=false;g.over=true;g.cur=null;g.clearing=null;musStop();
-  overlay('時間到',g.mode==='online'?'計算結果中…':'');SND.count(true);
-  if(g.mode==='online'){pres({st:'end',d:g.deaths,s:g.sent,l:g.lines,h:height(),b:enc()});setTimeout(showResult,1000)}
+function height(){for(let r=HID;r<ROWS;r++)if(g.board[r]&&g.board[r].some(v=>v))return ROWS-r;return 0}
+function checkEnd(){const alive=everyone().filter(p=>!p.out);if(alive.length<=1){endMatch();return true}return false}
+function timeUp(){endMatch()}
+function endMatch(){
+  if(!g.running)return;g.running=false;g.over=true;g.cur=null;g.clearing=null;musStop();
+  overlay(g.timeLeft<=0?'時間到':'比賽結束',g.mode==='online'?'計算結果中…':'');SND.count(true);
+  if(g.mode==='online'){pres({st:'end',dl:g.dl,out:g.out,pl:g.pl,s:g.sent,l:g.lines,h:height(),b:enc()});if(me&&me===g.aiHost)aiBroadcast();setTimeout(showResult,1000)}
   else setTimeout(showResult,700);
 }
-/* ---------- AI 對手 ---------- */
-const AIL={ai1:{ms:1150,err:.28,name:'AI・簡單'},ai2:{ms:720,err:.1,name:'AI・普通'},ai3:{ms:430,err:.03,name:'AI・困難'},ai4:{ms:240,err:0,name:'AI・地獄'}};
-let ai=null;
+
+/* ---------- 參與者（我＋AI＋線上玩家） ---------- */
+let AIS=[],netAIs=new Map(),lastPeers=[];
+const myId=()=>g.mode==='online'&&me?me:'me';
+function aiFoe(a){return{id:a.id,kind:'ai',name:a.name,b:aEnc(a),dl:a.dl,out:a.out,pl:a.pl,l:a.lines,h:aHeight(a),st:'play',lb:a.lb,lq:a.lq,cb:a.cb}}
+function netFoes(){return lastPeers.filter(p=>!p.sameTab&&p.kind==='viewer').map(p=>{const pr=p.presence||{};return{id:p.peer,kind:'net',name:typeof pr.n==='string'?pr.n.slice(0,12):'玩家',b:typeof pr.b==='string'?pr.b:'',
+  dl:Array.isArray(pr.dl)?pr.dl.slice(0,40).map(String):[],out:!!pr.out,pl:Math.max(0,Math.min(6,pr.pl|0)),l:Math.max(0,pr.l|0),h:Math.max(0,Math.min(20,pr.h|0)),st:typeof pr.st==='string'?pr.st:'idle',lb:pr.lb,lq:pr.lq,cb:pr.cb|0}})}
+function foes(){
+  if(g.mode==='solo')return AIS.map(aiFoe);
+  const list=netFoes();
+  if(me&&me===g.aiHost)list.push(...AIS.map(aiFoe));else for(const[id,s]of netAIs)list.push({...s,id,kind:'ai',st:'play'});
+  return list;
+}
+function meP(){return{id:myId(),name:nick(),dl:g.dl||[],out:!!g.out,pl:g.pl||0,l:g.lines||0,h:height(),me:true}}
+const everyone=()=>[meP(),...foes()];
+function koOf(id,all){let k=0;for(const p of all)for(const x of p.dl||[])if(x===id)k++;return k}
+const aliveCount=()=>everyone().filter(p=>!p.out).length;
+function curTarget(list){list=(list||foes()).filter(f=>!f.out);if(!list.length)return null;let t=list.find(f=>f.id===g.target);if(!t){t=list[0];g.target=t.id}return t}
+function setTarget(id){const f=foes().find(x=>x.id===id&&!x.out);if(f&&g.running&&!g.out){g.target=id;SND.move()}}
+function cycleTarget(){const l=foes().filter(f=>!f.out);if(l.length<2)return;const i=l.findIndex(f=>f.id===g.target);g.target=l[(i+1)%l.length].id;SND.move()}
+
+/* ---------- AI 對手（可多開） ---------- */
+const AIL={ai1:{ms:1150,err:.28,name:'AI・簡單',short:'簡單'},ai2:{ms:720,err:.1,name:'AI・普通',short:'普通'},ai3:{ms:430,err:.03,name:'AI・困難',short:'困難'},ai4:{ms:240,err:0,name:'AI・地獄',short:'地獄'}};
 const emptyB=()=>Array.from({length:ROWS},()=>Array(COLS).fill(0));
-function aiNew(lv,dig){const cfg=AIL[lv];ai={cfg,board:emptyB(),queue:[],incoming:[],combo:-1,b2b:false,lines:0,sent:0,deaths:0,next:1200,resp:0,dig};if(dig)aiDig()}
-function aiDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++)ai.board[r]=Array(COLS).fill(8)}
+function aiMake(id,lv,dig,name){const cfg=AIL[lv]||AIL.ai2;const a={id,name:name||cfg.name,cfg,board:emptyB(),queue:[],incoming:[],combo:-1,b2b:false,lines:0,sent:0,dl:[],out:false,pl:0,next:900+rnd(900),resp:0,dig,target:null,rt:0,lastHit:null,lb:null,lq:0,cb:0};
+  if(dig)for(let r=ROWS-DIGROWS;r<ROWS;r++)a.board[r]=Array(COLS).fill(8);return a}
 function bHit(b,t,r,x,y){const m=SH[t][r];for(let i=0;i<m.length;i++)for(let j=0;j<m.length;j++)if(m[i][j]){const nx=x+j,ny=y+i;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&b[ny][nx])return true}return false}
 function aiEval(b){let holes=0,bump=0,agg=0,lines=0;const hs=[];for(let c=0;c<COLS;c++){let top=ROWS;for(let r=0;r<ROWS;r++)if(b[r][c]){top=r;break}hs.push(ROWS-top);for(let r=top;r<ROWS;r++)if(!b[r][c])holes++}
   for(const row of b)if(row.every(v=>v)&&!row.every(v=>v===8))lines++;for(let c=0;c<COLS-1;c++)bump+=Math.abs(hs[c]-hs[c+1]);agg=hs.reduce((a,v)=>a+v,0);
   return lines*7.6-holes*7.2-agg*.51-bump*.36}
-function aiKO(){ai.deaths++;stamp($('ostamp'));$('oppCv')._key=null;ai.board=emptyB();if(ai.dig)aiDig();ai.incoming=[];ai.combo=-1;ai.b2b=false;ai.resp=1000;SND.ko()}
-function aiStep(dt){
-  if(!ai||g.mode!=='solo')return;
-  if(ai.resp>0){ai.resp-=dt;return}
-  {const now=performance.now();let n=0;while(ai.incoming.length&&ai.incoming[0].due<=now)n+=ai.incoming.shift().n;
-    if(n){let top=false;for(let i=0;i<Math.min(n,20);i++){if(ai.board.shift().some(v=>v))top=true;ai.board.push(Array(COLS).fill(8))}if(top){aiKO();return}}}
-  ai.next-=dt;if(ai.next>0)return;ai.next=ai.cfg.ms*(.75+Math.random()*.5);
-  while(ai.queue.length<7){const b=[...NAMES];for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]]}ai.queue.push(...b)}
-  const t=ai.queue.shift(),B=ai.board,sx=t==='O'?4:3;
-  if(bHit(B,t,0,sx,0)){aiKO();return}
+function aiKO(a){const killer=a.lastHit&&performance.now()-a.lastHit.t<20000?a.lastHit.id:'-';a.dl.push(killer);SND.ko();
+  if(g.elim){a.pl=aliveCount();a.out=true;a.incoming=[];return}
+  a.board=emptyB();if(a.dig)for(let r=ROWS-DIGROWS;r<ROWS;r++)a.board[r]=Array(COLS).fill(8);a.incoming=[];a.combo=-1;a.b2b=false;a.resp=1000}
+function aiPick(a,alive){const c=alive.filter(id=>id!==a.id);a.target=c.length?c[rnd(c.length)]:null;a.rt=6000+rnd(6000)}
+function aiSend(a,n){a.sent+=n;const t=a.target;if(!t)return;
+  if(t===myId()){g.incoming.push({n,h:g.hole,due:g.t+520,from:a.id});incomingFx(n,a.id);return}
+  const b=AIS.find(x=>x.id===t);if(b){b.incoming.push({n,due:performance.now()+520,from:a.id});fly(cardCv(a.id),cardCv(b.id),true,n);return}
+  if(g.mode==='online'&&M)M.emit('atk',{to:t,n,from:a.id}).catch(()=>{})}
+function aisStep(dt){if(!AIS.length)return;if(g.mode==='online'&&me!==g.aiHost)return;
+  const alive=everyone().filter(p=>!p.out).map(p=>p.id);for(const a of AIS)if(!a.out)aiStep(a,dt,alive)}
+function aiStep(a,dt,alive){
+  if(a.resp>0){a.resp-=dt;return}
+  {const now=performance.now();let n=0;while(a.incoming.length&&a.incoming[0].due<=now){const e=a.incoming.shift();n+=e.n;if(e.from)a.lastHit={id:e.from,t:now}}
+    if(n){let top=false;for(let i=0;i<Math.min(n,20);i++){if(a.board.shift().some(v=>v))top=true;a.board.push(Array(COLS).fill(8))}if(top){aiKO(a);return}}}
+  a.rt-=dt;if(a.rt<=0||!alive.includes(a.target))aiPick(a,alive);
+  a.next-=dt;if(a.next>0)return;a.next=a.cfg.ms*(.75+Math.random()*.5);
+  while(a.queue.length<7){const b=[...NAMES];for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]]}a.queue.push(...b)}
+  const t=a.queue.shift(),B=a.board,sx=t==='O'?4:3;
+  if(bHit(B,t,0,sx,0)){aiKO(a);return}
   const opts=[];
   for(let r=0;r<4;r++)for(let x=-2;x<COLS;x++){if(bHit(B,t,r,x,0))continue;let y=0;while(!bHit(B,t,r,x,y+1))y++;
-    const b=B.map(a=>a.slice()),m=SH[t][r];for(let i=0;i<m.length;i++)for(let j=0;j<m.length;j++)if(m[i][j]&&y+i>=0)b[y+i][x+j]=NAMES.indexOf(t)+1;opts.push({b,sc:aiEval(b)})}
-  if(!opts.length){aiKO();return}
-  opts.sort((a,b)=>b.sc-a.sc);const pick=Math.random()<ai.cfg.err?opts[Math.min(opts.length-1,1+rnd(Math.min(6,opts.length)))]:opts[0];
+    const b=B.map(q=>q.slice()),m=SH[t][r];for(let i=0;i<m.length;i++)for(let j=0;j<m.length;j++)if(m[i][j]&&y+i>=0)b[y+i][x+j]=NAMES.indexOf(t)+1;opts.push({b,sc:aiEval(b)})}
+  if(!opts.length){aiKO(a);return}
+  opts.sort((p,q)=>q.sc-p.sc);const pick=Math.random()<a.cfg.err?opts[Math.min(opts.length-1,1+rnd(Math.min(6,opts.length)))]:opts[0];
   let b=pick.b;
   const full=[];for(let r=0;r<ROWS;r++)if(b[r].every(v=>v)&&!b[r].every(v=>v===8))full.push(r);const n=full.length;
   if(n){b=b.filter((_,i)=>!full.includes(i));let k=0;while(k<n&&b.length&&b[b.length-1].every(v=>v===8)){b.pop();k++}while(b.length<ROWS)b.unshift(Array(COLS).fill(0));
-    let a=[0,0,1,2,4][n];const hard=n===4;if(hard&&ai.b2b)a+=1;ai.b2b=hard;ai.combo++;a+=COMBO[Math.min(ai.combo,COMBO.length-1)];ai.lines+=n;
-    while(a>0&&ai.incoming.length){const q=Math.min(a,ai.incoming[0].n);a-=q;ai.incoming[0].n-=q;if(!ai.incoming[0].n)ai.incoming.shift()}
-    if(a>0){ai.sent+=a;g.incoming.push({n:a,h:g.hole,due:g.t+520});incomingFx(a)}
-    showLabel($('oclabel'),['','SINGLE','DOUBLE','TRIPLE','QUAD'][n],'',hard&&ai.b2b&&n===4&&false);if(ai.combo>=1)showCombo($('ocombo'),ai.combo);
-  }else{ai.combo=-1;ai.board=b;if(b.slice(0,HID).some(r=>r.some(v=>v))){aiKO();return}}
-  ai.board=b;
+    let atk=[0,0,1,2,4][n];const hard=n===4,b2b=hard&&a.b2b;if(b2b)atk+=1;a.b2b=hard;a.combo++;atk+=COMBO[Math.min(a.combo,COMBO.length-1)];a.lines+=n;
+    while(atk>0&&a.incoming.length){const q=Math.min(atk,a.incoming[0].n);atk-=q;a.incoming[0].n-=q;if(!a.incoming[0].n)a.incoming.shift()}
+    if(atk>0)aiSend(a,atk);
+    a.lb=(b2b?'B2B|':'')+'|'+['','SINGLE','DOUBLE','TRIPLE','QUAD'][n];a.lq++;a.cb=a.combo;
+  }else{a.combo=-1;a.board=b;if(b.slice(0,HID).some(r=>r.some(v=>v))){aiKO(a);return}}
+  a.board=b;
 }
-const aiEnc=()=>ai.board.slice(HID).map(r=>r.join('')).join('');
-const aiHeight=()=>{for(let r=HID;r<ROWS;r++)if(ai.board[r].some(v=>v))return ROWS-r;return 0};
+const aEnc=a=>a.board.slice(HID).map(r=>r.join('')).join('');
+const aHeight=a=>{for(let r=HID;r<ROWS;r++)if(a.board[r].some(v=>v))return ROWS-r;return 0};
+
+/* ---------- 結算 ---------- */
 const better=(a,b)=>a.ko!==b.ko?a.ko>b.ko:a.lines!==b.lines?a.lines>b.lines:a.h<b.h;
 function showResult(){
-  setPhase('');
-  const meRow={name:nick(),ko:0,lines:g.lines,h:height(),me:true};let rows=[meRow],t='時間到';
-  if(g.mode==='online'){const pr=(opp&&opp.presence)||{};meRow.ko=pr.d|0;
-    const op={name:typeof pr.n==='string'?pr.n.slice(0,12):'對手',ko:g.deaths,lines:Math.max(0,pr.l|0),h:Math.max(0,Math.min(20,pr.h|0))};rows.push(op);
-    const tie=op.ko===meRow.ko&&op.lines===meRow.lines&&op.h===meRow.h;
-    t=tie?'平手':better(meRow,op)?'你贏了':'你輸了';rows.sort((a,b)=>better(a,b)?-1:better(b,a)?1:0);
-    if(t==='你贏了'){wins++;SND.win()}else SND.lose();pres({st:'idle',w:wins});
-    overlay(t,'按「準備」再戰');
-  }else if(ai){meRow.ko=ai.deaths;const op={name:ai.cfg.name,ko:g.deaths,lines:ai.lines,h:aiHeight()};rows.push(op);
-    const tie=op.ko===meRow.ko&&op.lines===meRow.lines&&op.h===meRow.h;t=tie?'平手':better(meRow,op)?'你贏了':'你輸了';rows.sort((a,b)=>better(a,b)?-1:better(b,a)?1:0);
-    if(t==='你贏了'){wins++;SND.win()}else SND.lose();overlay(t,`對手：${ai.cfg.name}`,'再來一局',()=>startGame('solo',soloOpt()));
-  }else{SND.win();overlay('時間到',`分數 ${g.score}・攻擊 ${g.sent}`,'再來一局',()=>startGame('solo',soloOpt()))}
+  setPhase('');const all=everyone(),online=g.mode==='online';
+  const rows=all.map(p=>({name:p.name+(p.me?'（你）':''),me:!!p.me,ko:koOf(p.id,all),lines:p.l,h:p.h,out:!!p.out,pl:p.pl}));
+  const alive=rows.filter(r=>!r.out).sort((a,b)=>better(a,b)?-1:better(b,a)?1:0),outs=rows.filter(r=>r.out).sort((a,b)=>a.pl-b.pl),sorted=[...alive,...outs];
+  sorted.forEach((r,i)=>{if(r.out)r.place=r.pl||i+1;else r.place=i>0&&!sorted[i-1].out&&!better(sorted[i-1],r)?sorted[i-1].place:i+1});
+  const mine=sorted.find(r=>r.me),solo1=rows.length===1,tie=!solo1&&sorted.filter(r=>r.place===1).length>1&&mine.place===1;
+  const t=solo1?'時間到':tie?'平手':mine.place===1?'你贏了':`第 ${mine.place} 名`;
+  if(!solo1&&mine.place===1&&!tie){wins++;SND.win()}else if(solo1)SND.win();else SND.lose();
+  if(online){pres({st:'idle',w:wins});overlay(t,'按「準備」再戰')}else overlay(t,`分數 ${g.score}・攻擊 ${g.sent}`,'再來一局',()=>startGame('solo',soloOpt()));
   const tb=$('resBody');tb.textContent='';
-  rows.forEach((r,i)=>{const tr=document.createElement('tr');if(r.me)tr.className='me';if(i===0)tr.classList.add('first');
-    const tieUp=i>0&&!better(rows[i-1],r)&&!better(r,rows[i-1]);
-    for(const v of[tieUp?'同':['第1','第2','第3','第4','第5','第6'][i],r.name+(r.me?'（你）':''),r.ko,r.lines,r.h]){const td=document.createElement('td');td.textContent=v;tr.appendChild(td)}tb.appendChild(tr)});
-  $('resSub').textContent=g.mode==='online'||ai?t:`被 KO ${g.deaths} 次・分數 ${g.score}`;$('res').hidden=false;
+  sorted.forEach((r,i)=>{const tr=document.createElement('tr');if(r.me)tr.className='me';if(r.place===1)tr.classList.add('first');
+    const same=i>0&&sorted[i-1].place===r.place;
+    for(const v of[same?'同':'第'+r.place,r.name+(r.out?'・出局':''),r.ko,r.lines,r.h]){const td=document.createElement('td');td.textContent=v;tr.appendChild(td)}tb.appendChild(tr)});
+  $('resSub').textContent=solo1?`被 KO ${g.dl.length} 次・分數 ${g.score}`:t;$('res').hidden=false;
 }
-$('resOk').onclick=()=>{$('res').hidden=true};
 function win(msg){if(!g.running)return;g.running=false;g.over=true;g.cur=null;musStop();setPhase('');wins++;SND.win();pres({st:'idle',w:wins});overlay('你贏了',msg||'按「準備」再來一場')}
 
 /* ---------- 輸入 ---------- */
@@ -576,7 +668,7 @@ function press(k){
 }
 function release(k){if(k==='D')padSoft=false;if((k==='L'&&held===-1)||(k==='R'&&held===1))held=0;if(k==='D')soft=false}
 const KEYS={ArrowLeft:'L',ArrowRight:'R',ArrowDown:'D',Space:'HD',ArrowUp:'CW',KeyX:'CW',KeyZ:'CCW',ControlLeft:'CCW',KeyC:'H',ShiftLeft:'H',ShiftRight:'H'};
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=KEYS[e.code];if(!k)return;e.preventDefault();if(!e.repeat)press(k)});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Tab'&&g.running){e.preventDefault();cycleTarget();return}const k=KEYS[e.code];if(!k)return;e.preventDefault();if(!e.repeat)press(k)});
 addEventListener('keyup',e=>{const k=KEYS[e.code];if(k)release(k)});
 for(const el of[$('gz'),$('pad')])el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener('dblclick',e=>{if(e.target.closest('main'))e.preventDefault()},{passive:false});
@@ -657,43 +749,97 @@ try{const q=new URLSearchParams(location.search).get('r');if(q&&/^[a-z0-9]{1,8}$
 $('bInv').onclick=()=>{const url=`${location.origin}${location.pathname}?r=${$('code').value}`;const done=()=>st('邀請連結已複製：'+url);
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,()=>st('請手動複製：'+url));else st('請手動複製：'+url)};
 $('bRand').onclick=()=>{const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<5;i++)s+=a[rnd(a.length)];$('code').value=s};
-async function leaveRoom(){const m=M;M=null;opp=null;ready=false;$('bReady').disabled=true;$('bReady').textContent='準備';setT('oppName','—');if(m)await m.leave().catch(()=>{})}
+async function leaveRoom(){const m=M;M=null;lastPeers=[];ready=false;goSent=false;expect=null;$('bReady').disabled=true;$('bReady').textContent='準備';if(m)await m.leave().catch(()=>{})}
+async function joinRoom(code){
+  await leaveRoom();st('進房中…');
+  try{M=await R.join('bb-'+code)}catch(e){st(e&&e.code==='limit_reached'?'這個房間已滿（最多 6 人），換一個房號吧。':'進房失敗（'+(e&&e.code||'錯誤')+'），請稍後再試。');return false}
+  M.onPeers(ch=>peersChanged(ch.peers),e=>st('連線中斷（'+e.code+'）'));
+  M.on('atk',onAtk);M.on('go',onGo);M.on('ai',onAiMsg);
+  fillAI=$('fill').checked;pres({n:nick(),st:'idle',w:wins,fa:fillAI});$('bReady').disabled=false;$('bInv').hidden=inClaude;return true}
 $('bJoin').onclick=async()=>{
-  if(!R)return;const code=$('code').value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
+  if(!R)return;if(LB)await stopMM();const code=$('code').value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
   if(!code){st('請先輸入房號，或按「隨機房號」。');return}
   $('code').value=code;try{localStorage.setItem('bb-nick',nick())}catch(_){}
-  await leaveRoom();st('進房中…');
-  try{M=await R.join('bb-'+code)}catch(e){st(e&&e.code==='limit_reached'?'這個房間已滿，換一個房號吧。':'進房失敗（'+(e&&e.code||'錯誤')+'），請稍後再試。');return}
-  M.onPeers(ch=>peersChanged(ch.peers),e=>st('連線中斷（'+e.code+'）'));
-  M.on('atk',onAtk);M.on('go',onGo);
-  pres({n:nick(),st:'idle',w:wins});$('bReady').disabled=false;
-  st(`已進入房號 ${code}，等待對手…可以按「複製邀請連結」傳給朋友。`);$('bInv').hidden=inClaude;
+  if(await joinRoom(code))st(`已進入房號 ${code}，最多 6 人。可以按「複製邀請連結」傳給朋友。`);
 };
-$('bReady').onclick=()=>{if(!M)return;if(g.running&&g.mode==='online')return;ready=!ready;goSent=false;$('bReady').textContent=ready?'取消準備':'準備';pres({st:ready?'ready':'idle',n:nick(),w:wins,dg:$('dig').checked});if(ready)overlay('準備好了',opp?'等對手按準備…':'等對手進房…');maybeGo()};
-let oppSeen={d:0,lq:null};
+$('fill').onchange=()=>{fillAI=$('fill').checked;pres({fa:fillAI});if(M)peersChanged(lastPeers)};
+$('bReady').onclick=()=>{if(!M)return;if(g.running&&g.mode==='online')return;ready=!ready;goSent=false;$('bReady').textContent=ready?'取消準備':'準備';pres({st:ready?'ready':'idle',n:nick(),w:wins,dg:$('dig').checked,fa:fillAI});if(ready)overlay('準備好了',roomHumans().length>1?'等其他人按準備…':wantFill()?'跟 AI 補位開打…':'等對手進房…');maybeGo()};
+let fillAI=false,expect=null,goGr=null;
+const roomHumans=()=>lastPeers.filter(p=>p.kind==='viewer');
+const wantFill=()=>fillAI||roomHumans().some(p=>!p.sameTab&&(p.presence||{}).fa);
+const hostId=()=>roomHumans().map(p=>p.peer).sort()[0]||null;
 function peersChanged(ps){
-  const mine=ps.find(p=>p.sameTab);if(mine)me=mine.peer;
-  const o=ps.find(p=>!p.sameTab&&p.kind==='viewer')||null;
-  if(opp&&!o&&g.running&&g.mode==='online')win('對手離開了');
-  opp=o;
-  if(o){const pr=o.presence||{};
-    if(g.running&&g.mode==='online'){const d=pr.d|0;if(d>oppSeen.d){stamp($('ostamp'));$('oppCv')._key=null}oppSeen.d=d;
-      if(typeof pr.lb==='string'&&pr.lq!==oppSeen.lq){oppSeen.lq=pr.lq;const parts=pr.lb.slice(0,40).split('|'),b2b=parts[0]==='B2B';if(b2b)parts.shift();const cls=parts[0]==='ts'?'ts':'';showLabel($('oclabel'),parts.slice(1).join('|').replace(/[^A-Za-z\- \n]/g,''),cls,b2b);if((pr.cb|0)>=1)showCombo($('ocombo'),Math.min(99,pr.cb|0))}}const name=typeof pr.n==='string'?pr.n.slice(0,12):'對手';const sl={idle:'',ready:'・已準備',play:'・遊戲中',ko:'・KO'}[pr.st]||'';setT('oppName',name+sl);
-    if(M)st(ready?'已準備，等待開始…':`對手：${name}。雙方都按「準備」就會開始。`);
-    if(ready&&pr.st==='play'&&!g.running)begin();
-  }else{setT('oppName','—');if(M&&!g.running)st('等待對手進房…')}
+  lastPeers=ps;const mine=ps.find(p=>p.sameTab);if(mine)me=mine.peer;
+  const others=ps.filter(p=>!p.sameTab&&p.kind==='viewer');
+  if(g.running&&g.mode==='online'&&!g.elim&&!others.length)win('對手離開了');
+  if(M&&!g.running){const r=others.filter(p=>(p.presence||{}).st==='ready').length;
+    st(others.length?`房內 ${others.length+1} 人（${r} 人已準備）。全部按「準備」就開始${wantFill()?'，不足 6 人用 AI 補位':''}。`:`等待對手進房…${wantFill()?'也可以直接按「準備」跟 AI 打':''}`)}
+  if(ready&&!g.running){const h=ps.find(p=>p.peer===hostId()),hp=h&&h.presence||{};if(h&&!h.sameTab&&hp.st==='play'&&hp.gr&&Array.isArray(hp.gr.ids)&&hp.gr.ids.includes(me))begin({...hp.gr,host:h.peer})}
   maybeGo();
 }
-function maybeGo(){if(!M||!opp||!me||!ready||goSent)return;if((opp.presence||{}).st==='ready'&&me<opp.peer){goSent=true;M.emit('go',{a:me,b:opp.peer,dig:$('dig').checked}).catch(()=>{goSent=false})}}
-function onGo(m){const d=m.data||{};if(!ready)return;if(!(m.sameTab||(opp&&m.peer===opp.peer)))return;if(d.a!==me&&d.b!==me)return;begin(d.dig)}
-function begin(dig){if(dig===undefined)dig=me<(opp?opp.peer:'')?$('dig').checked:!!((opp&&opp.presence)||{}).dg;ready=false;goSent=false;$('bReady').textContent='準備';startGame('online',{timed:true,dig})}
-function onAtk(m){if(m.sameTab||!g.running||g.mode!=='online'||!opp||m.peer!==opp.peer)return;const d=m.data||{};if(d.to!==me)return;const n=Math.max(1,Math.min(20,d.n|0));g.incoming.push({n,h:g.hole,due:g.t+520});incomingFx(n)}
-function sendAtk(a){beam(a);SND.atk();if(ai&&g.mode==='solo')ai.incoming.push({n:a,due:performance.now()+520});if(g.mode==='online'&&M&&opp)M.emit('atk',{to:opp.peer,n:a}).catch(()=>{})}
-setInterval(()=>{if(M&&g.mode==='online'&&g.running)pres({b:enc(),d:g.deaths,s:g.sent,l:g.lines,h:height()})},250);
+function maybeGo(){
+  if(!M||!me||!ready||goSent||g.running)return;if(hostId()!==me)return;
+  const hs=roomHumans(),rd=hs.filter(p=>p.sameTab?ready:(p.presence||{}).st==='ready');let go=false;
+  if(expect)go=rd.length>=expect.n||(Date.now()>expect.deadline&&rd.length>=1);
+  else go=rd.length===hs.length&&(hs.length>=2||wantFill());
+  if(!go)return;
+  const ids=rd.map(p=>p.peer).slice(0,6),nAI=wantFill()?Math.max(0,6-ids.length):0,ais=[];
+  for(let i=1;i<=nAI;i++)ais.push({id:'ai'+i,name:'AI '+i,lv:'ai2'});
+  goGr={ids,ais,dig:$('dig').checked};goSent=true;
+  M.emit('go',{...goGr,host:me}).catch(()=>{goSent=false});
+}
+function onGo(m){const d=m.data||{};if(!ready||g.running)return;if(!(m.sameTab||m.peer===hostId()))return;if(!Array.isArray(d.ids)||!d.ids.includes(me))return;begin({...d,host:m.sameTab?me:m.peer})}
+function begin(d){
+  const ais=(Array.isArray(d.ais)?d.ais:[]).slice(0,5).filter(r=>r&&/^ai[1-5]$/.test(r.id)).map(r=>({id:r.id,name:String(r.name||'AI').slice(0,12),lv:AIL[r.lv]?r.lv:'ai2'}));
+  ready=false;goSent=false;expect=null;$('bReady').textContent='準備';
+  startGame('online',{timed:true,dig:!!d.dig,ais,host:d.host,humans:Math.max(1,Math.min(6,(d.ids||[]).length))});
+  if(d.host===me&&goGr)pres({gr:goGr});
+}
+function onAtk(m){
+  if(!g.running||g.mode!=='online')return;const d=m.data||{};if(typeof d.to!=='string')return;const n=Math.max(1,Math.min(20,d.n|0));
+  if(me===g.aiHost&&!m.sameTab){const a=AIS.find(x=>x.id===d.to);if(a){if(!a.out)a.incoming.push({n,due:performance.now()+520,from:m.peer});return}}
+  if(d.to!==me||m.sameTab||g.out)return;
+  const from=m.peer===g.aiHost&&typeof d.from==='string'&&/^ai[1-5]$/.test(d.from)?d.from:m.peer;
+  g.incoming.push({n,h:g.hole,due:g.t+520,from});incomingFx(n,from);
+}
+function onAiMsg(m){if(m.sameTab||m.peer!==g.aiHost)return;const s=(m.data||{}).s;if(!Array.isArray(s))return;
+  for(const x of s.slice(0,5)){if(!x||!netAIs.has(x.id))continue;const o=netAIs.get(x.id);
+    netAIs.set(x.id,{name:o.name,b:typeof x.b==='string'&&/^[0-8]{200}$/.test(x.b)?x.b:o.b,dl:Array.isArray(x.dl)?x.dl.slice(0,40).map(String):o.dl,out:!!x.out,pl:Math.max(0,Math.min(6,x.pl|0)),l:Math.max(0,x.l|0),h:Math.max(0,Math.min(20,x.h|0)),lb:typeof x.lb==='string'?x.lb:o.lb,lq:x.lq,cb:x.cb|0})}}
+function aiBroadcast(){if(M&&AIS.length)M.emit('ai',{s:AIS.map(a=>({id:a.id,b:aEnc(a),dl:a.dl.slice(-30),out:a.out,pl:a.pl,l:a.lines,h:aHeight(a),lb:a.lb,lq:a.lq,cb:a.cb}))}).catch(()=>{})}
+function sendAtk(a){beam(a);SND.atk();const t=curTarget();if(!t)return;
+  if(g.mode==='solo'){const b=AIS.find(x=>x.id===t.id);if(b)b.incoming.push({n:a,due:performance.now()+520,from:'me'});return}
+  if(g.mode==='online'&&M){const loc=me===g.aiHost&&AIS.find(x=>x.id===t.id);if(loc)loc.incoming.push({n:a,due:performance.now()+520,from:me});else M.emit('atk',{to:t.id,n:a}).catch(()=>{})}}
+setInterval(()=>{if(M&&g.mode==='online'&&g.running){pres({b:enc(),dl:g.dl,out:g.out,pl:g.pl,s:g.sent,l:g.lines,h:height()});if(me===g.aiHost)aiBroadcast()}},280);
+setInterval(()=>{if(M&&!g.running)maybeGo()},1000);
+
+/* ---------- 快速配對（大廳 mm-lobby，10 秒內成局，不足 6 人 AI 補位） ---------- */
+let LB=null,mmTimer=null,mmT0=0,mmSeen=new Map(),mmLast=0;
+async function stopMM(){clearInterval(mmTimer);mmTimer=null;const l=LB;LB=null;$('bQuick').textContent='快速配對';if(l)await l.leave().catch(()=>{})}
+$('bQuick').onclick=async()=>{
+  if(LB){await stopMM();st('已取消配對。');return}
+  if(!R)return;await leaveRoom();try{localStorage.setItem('bb-nick',nick())}catch(_){}st('連線到配對大廳…');
+  try{LB=await R.join('mm-lobby')}catch(e){LB=null;st('配對大廳連不上（'+(e&&e.code||'錯誤')+'）');return}
+  mmT0=Date.now();mmSeen=new Map();LB.presence({mm:1,n:nick()}).catch(()=>{});LB.on('match',onMatch);$('bQuick').textContent='取消配對';
+  mmTimer=setInterval(mmTick,1000);mmTick();
+};
+function mmTick(){if(!LB)return;const now=Date.now(),ps=LB.peers().filter(p=>p.kind==='viewer'&&(p.presence||{}).mm);
+  for(const p of ps)if(!mmSeen.has(p.peer))mmSeen.set(p.peer,now);
+  st(`配對中…已等 ${Math.floor((now-mmT0)/1000)} 秒，大廳 ${ps.length} 人（約 10 秒後不足 6 人會用 AI 補位）`);
+  const mine=ps.find(p=>p.sameTab);if(!mine)return;if(ps.map(p=>p.peer).sort()[0]!==mine.peer||now-mmLast<3000)return;
+  const q=ps.slice().sort((a,b)=>mmSeen.get(a.peer)-mmSeen.get(b.peer));
+  if(q.length>=6||now-mmSeen.get(q[0].peer)>=10000){mmLast=now;const a='abcdefghjkmnpqrstuvwxyz23456789';let room='q';for(let i=0;i<6;i++)room+=a[rnd(a.length)];
+    LB.emit('match',{room,ids:q.slice(0,6).map(p=>p.peer)}).catch(()=>{})}}
+async function onMatch(m){const d=m.data||{};if(!LB||!Array.isArray(d.ids)||typeof d.room!=='string'||!/^q[a-z0-9]{6}$/.test(d.room))return;
+  const mine=LB.peers().find(p=>p.sameTab);if(!mine||!d.ids.includes(mine.peer))return;
+  await stopMM();$('code').value=d.room;$('fill').checked=true;
+  const okJoin=await joinRoom(d.room);if(!okJoin)return;
+  expect={n:Math.min(6,d.ids.length),deadline:Date.now()+6000};ready=true;$('bReady').textContent='取消準備';
+  fillAI=true;pres({st:'ready',n:nick(),w:wins,dg:$('dig').checked,fa:true});overlay('配對成功',`${d.ids.length} 位玩家${d.ids.length<6?'＋AI 補位':''}・準備開始…`);maybeGo();
+}
 
 /* ---------- 主迴圈 ---------- */
 let last=performance.now();
-function loop(now){requestAnimationFrame(loop);const dt=Math.min(100,now-last);last=now;try{update(dt)}catch(e){console.error(e)}try{draw();drawOpp()}catch(e){console.error(e)}}
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(100,now-last);last=now;try{update(dt)}catch(e){console.error(e)}try{draw();drawFoes()}catch(e){console.error(e)}}
 reset('solo');g.over=true;requestAnimationFrame(loop);
 }
 </script>

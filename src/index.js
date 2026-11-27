@@ -4,7 +4,8 @@ import { DurableObject } from "cloudflare:workers";
 
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
 const TOPIC_RE = /^[a-z][a-z0-9_.-]{0,47}$/;
-const MAX_PLAYERS = 6;        // 每房上限（之後做 6 人混戰直接沿用）
+const MAX_PLAYERS = 6;        // 對戰房上限
+const MAX_LOBBY = 200;        // 配對大廳（mm- 開頭）上限
 const MAX_MSG = 8192;         // 單則訊息上限（字元）
 const MAX_PRESENCE = 1800;    // 每人狀態上限（Hibernation 附件上限 2KB）
 
@@ -16,7 +17,9 @@ export default {
       if (!ROOM_RE.test(name)) return new Response("bad room", { status: 400 });
       if (request.headers.get("Upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
       const stub = env.ROOMS.get(env.ROOMS.idFromName(name));
-      return stub.fetch(request);
+      const fwd = new Request(request);
+      fwd.headers.set("x-room", name);
+      return stub.fetch(fwd);
     }
     if (url.pathname === "/health") return new Response("ok");
     return env.ASSETS.fetch(request);
@@ -30,12 +33,14 @@ export class Room extends DurableObject {
     this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
 
-  async fetch() {
+  async fetch(request) {
+    const name = request.headers.get("x-room") || "";
+    const cap = name.startsWith("mm-") ? MAX_LOBBY : MAX_PLAYERS;
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     const open = this.ctx.getWebSockets().filter((w) => w.readyState === 1).length;
     this.ctx.acceptWebSocket(server);
-    if (open >= MAX_PLAYERS) {
+    if (open >= cap) {
       server.send(JSON.stringify({ t: "full" }));
       server.close(4001, "room full");
       return new Response(null, { status: 101, webSocket: client });
