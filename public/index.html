@@ -544,7 +544,7 @@ function drawFoes(){
   if(cards.has('_empty')){cards.get('_empty').remove();cards.delete('_empty')}
   const ids=new Set(list.map(f=>f.id));for(const[id,c]of cards)if(!ids.has(id)){c.remove();cards.delete(id)}
   list.forEach((f,i)=>{let c=cards.get(f.id);if(!c){c=mkCard(f.id);cards.set(f.id,c)}if(box.children[i]!==c)box.insertBefore(c,box.children[i]||null);
-    c.classList.toggle('tg',!!tgt&&tgt.id===f.id);c.classList.toggle('out',!!f.out);
+    c.classList.toggle('tg',!!tgt&&tgt.id===f.id&&list.filter(x=>!x.out).length>1);c.classList.toggle('out',!!f.out);
     const nm=f.name+(f.kind==='net'&&g.over&&f.st==='ready'?'・已準備':'');const fn=c.querySelector('.fname');if(fn.textContent!==nm)fn.textContent=nm;
     const kb=c.querySelector('.kob'),k=String(koOf(f.id,all));if(kb.textContent!==k)kb.textContent=k;kb.hidden=k==='0';
     const pb=c.querySelector('.plb'),pt=f.out&&f.pl?ordinal(f.pl):'';if(pb.textContent!==pt)pb.textContent=pt;
