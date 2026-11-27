@@ -156,6 +156,30 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
 .rtab tr.me td{background:#ffe066}.rtab tr.first td:first-child{color:#d97a00}
 .rnote{margin:10px 2px 12px;font-size:12px;font-weight:700;text-align:center;color:#4a3a00}
 .cont{display:block;margin:0 auto;min-width:200px;min-height:52px;font-size:20px;background:linear-gradient(#7be35a,#2fb52a);border-radius:999px}
+.menu{position:absolute;inset:6px;z-index:8;background:rgba(20,22,28,.96);border:3px solid var(--line);border-radius:16px;display:flex;flex-direction:column;gap:8px;padding:10px;overflow:auto;color:#fff;box-shadow:0 0 0 2px #4a4f5a inset}
+.menu[hidden]{display:none}
+.mtop{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:#c9cdd6}.mtop input{min-height:36px;font-size:15px;padding:0 10px;border-width:2px;flex:1}
+.mmsg{background:linear-gradient(#ffe766,#ffbf0f);color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:6px 10px;font-weight:900;font-size:14px;text-align:center}
+.mmsg[hidden]{display:none}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:#0e0f12;border-radius:12px;padding:3px}
+.tabs button{min-height:36px;font-size:13px;padding:0 4px;border:0;box-shadow:none;background:transparent;color:#c9cdd6;border-radius:10px}
+.tabs button.on{background:linear-gradient(#ffe766,#ffbf0f);color:var(--ink)}
+.pane{display:flex;flex-direction:column;gap:8px}.pane[hidden]{display:none}
+.mlab{font-weight:900;font-size:13px;color:var(--acc)}.mlab small{color:#c9cdd6;font-weight:700;margin-left:4px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px}
+.chips button{min-height:36px;font-size:14px;padding:0 4px;border-width:2px;box-shadow:0 3px 0 var(--line);background:linear-gradient(#4a4f5a,#33363e)}
+.chips button.on{background:linear-gradient(#5aa8ff,#2f74ff)}
+.chips.tog{grid-template-columns:repeat(2,minmax(0,1fr))}.chips.tog button.on{background:linear-gradient(#7be35a,#2fb52a)}
+.chips button:disabled{opacity:.35}
+.go.big{min-height:52px;font-size:20px;margin-top:2px}
+.mtxt{margin:0;font-size:13px;line-height:1.5;color:#dfe3ea}
+.mrow2{display:flex;gap:6px}.mrow2 input{min-height:40px;font-size:15px;border-width:2px;flex:1}.mrow2 button{min-height:40px;font-size:14px;padding:0 10px;flex:none}
+.inroom[hidden]{display:none}
+.menu[data-tab=solo] .mtop{display:none}
+.pane .go.big{position:sticky;bottom:0;z-index:1}
+.menu[data-tab=solo] .mst{display:none}
+.mst{margin:auto 0 0;font-size:12px;line-height:1.45;color:#aeb4c0}
+@media(max-width:600px){.menu{inset:3px;padding:8px;gap:5px}.tabs button{min-height:32px}.mlab{font-size:12px}.chips{gap:4px}.chips button{min-height:31px!important}.chips{grid-template-columns:repeat(3,minmax(0,1fr))}.chips[data-for=ainum]{grid-template-columns:repeat(5,minmax(0,1fr))}.chips button{min-height:34px;font-size:13px}.go.big{min-height:46px;font-size:18px}}
 @media(hover:hover) and (pointer:fine){.pad,.padhint,.gz,.ctlrow{display:none!important}}
 @media(max-width:600px){.unit{border-radius:16px;padding:6px 4px}.pod.l{margin-right:3px}.pod.r{margin-left:3px}}
 @media(prefers-reduced-motion:reduce){.pop.on{animation:none;opacity:1}.meter i{transition:none}}
@@ -189,11 +213,40 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
         <div class="combo" id="combo"><b></b><span>COMBO!</span></div>
         <div class="stamp" id="stamp">K.O.</div>
         <div class="clabel" id="clabel"></div>
-        <div class="ov" id="ov"><h2 id="ovT">開始</h2><p id="ovP">選「單人練習」或進房對戰</p><button class="go" id="ovB">單人練習</button></div>
+        <div class="ov" id="ov" hidden><h2 id="ovT"></h2><p id="ovP"></p><button class="go" id="ovB" hidden>再來一局</button></div>
       </div>
       <div class="pod r">
         <div class="lab">下一個</div>
         <div class="slot"><canvas id="nextCv"></canvas></div>
+      </div>
+      <div class="menu" id="menu">
+        <div class="mtop"><span>暱稱</span><input id="nick" maxlength="12" placeholder="玩家"></div>
+        <div class="mmsg" id="menuMsg" hidden></div>
+        <div class="tabs" role="tablist"><button data-tab="solo" class="on">單人</button><button data-tab="quick">快速配對</button><button data-tab="room">好友房</button></div>
+        <div class="pane" data-pane="solo">
+          <div class="mlab">對手</div>
+          <div class="chips" data-for="foe"><button data-v="ai1">簡單</button><button data-v="ai2" class="on">普通</button><button data-v="ai3">困難</button><button data-v="ai4">地獄</button><button data-v="cpu">練習</button><button data-v="none">無</button></div>
+          <div class="mrow" id="rowNum"><div class="mlab">AI 人數 <small id="numHint">1 對 1</small></div>
+          <div class="chips" data-for="ainum"><button data-v="1" class="on">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+          <div class="chips tog"><button data-tog="dig">挖掘地圖</button><button data-tog="timed" id="togTimed">限時 2 分</button></div>
+          <button class="go big" id="bSolo">開始</button>
+        </div>
+        <div class="pane" data-pane="quick" hidden>
+          <p class="mtxt">自動找線上對手，約 10 秒內開局；不足 6 人用 AI 補位。3 人以上被 KO 就出局。</p>
+          <button class="go big" id="bQuick">開始配對</button>
+        </div>
+        <div class="pane" data-pane="room" hidden>
+          <div class="mrow2"><input id="code" maxlength="8" placeholder="房號（英數）" autocapitalize="off"><button id="bRand">隨機</button></div>
+          <button class="go" id="bJoin">進房</button>
+          <div class="inroom" id="inRoom" hidden>
+            <div class="mrow2"><button class="go" id="bReady" disabled>準備</button><button id="bInv" hidden>邀請連結</button><button id="bLeave">離開</button></div>
+          </div>
+          <div class="chips tog"><button data-tog="fill">AI 補到 6 人</button><button data-tog="dig">挖掘地圖</button></div>
+        </div>
+        <p class="mst" id="st">連線中…</p>
+        <select id="foe" hidden><option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option><option value="cpu">練習</option><option value="none">無對手</option></select>
+        <select id="ainum" hidden><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        <input type="checkbox" id="timed" hidden><input type="checkbox" id="dig" hidden><input type="checkbox" id="fill" hidden>
       </div>
     </div>
     <div class="unit opp">
@@ -221,24 +274,6 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
   </div>
   <p class="keys padhint">左手：← → 移動・↓ 按一下直接到底（測試中）　右手：暫存・黃色 ↻ 旋轉・下方紅色「到底」<br>碰到底後還有約半秒可以移動或旋轉，把方塊轉進縫隙就是 T 旋</p>
 
-  <section class="panel">
-    <h3>單人練習</h3>
-    <div class="row"><button class="go" id="bSolo">開始練習</button>
-      <label class="chk">對手 <select id="foe">
-        <option value="ai1">AI・簡單</option><option value="ai2" selected>AI・普通</option><option value="ai3">AI・困難</option><option value="ai4">AI・地獄</option>
-        <option value="cpu">定時丟垃圾（不比賽）</option><option value="none">無對手</option></select></label>
-      <label class="chk">AI 人數 <select id="ainum"><option value="1" selected>1（1 對 1）</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5（6 人混戰）</option></select></label>
-      <label class="chk"><input type="checkbox" id="timed"> 限時 2 分鐘（選 AI 對手時固定開啟；1 對 1 被 KO 重生，3 人以上被 KO 出局）</label></div>
-    <label class="chk"><input type="checkbox" id="dig"> 挖掘地圖：開局底部有 6 排灰色（單人、對戰都適用，對戰以房主設定為準）</label>
-    <p class="status">灰色排是實心的，不能直接消掉；你每消一行，最底下就會降掉一排灰色。</p>
-    <h3>線上對戰（最多 6 人・2 分鐘）</h3>
-    <div class="row"><button class="go" id="bQuick">快速配對</button><span class="status">自動找對手，約 10 秒內開局，不足 6 人用 AI 補位</span></div>
-    <div class="row"><input id="nick" maxlength="12" placeholder="暱稱"><input id="code" maxlength="8" placeholder="房號（英數）" autocapitalize="off"></div>
-    <div class="row"><button id="bRand">隨機房號</button><button id="bJoin">進房</button><button class="go" id="bReady" disabled>準備</button><button id="bInv" hidden>複製邀請連結</button></div>
-    <label class="chk"><input type="checkbox" id="fill"> 人數不足時用 AI 補到 6 人（房主電腦負責跑 AI）</label>
-    <p class="status">準心：多人時會在對手之間隨機跳動，攻擊打向準心所在的對手；也可以點盤面（鍵盤 Tab）暫時指定。3 人以上被 KO 就出局，最後存活或時間到依 KO、消行、高度排名。</p>
-    <p class="status" id="st">連線中…</p>
-  </section>
   <p class="keys">鍵盤：← → 移動・↓ 加速・空白鍵 落下・↑ / X 順轉・Z 逆轉・C / Shift 暫存</p>
   <div class="res" id="res" hidden><div class="rcard" role="dialog" aria-labelledby="resT">
     <div class="ribbon"><h2 id="resT">RESULTS</h2></div>
@@ -545,7 +580,7 @@ function incomingFx(n,from){fly(from?cardCv(from):$('foes'),$('meter').parentNod
 function setPhase(ph){const r=document.documentElement;if((r.dataset.phase||'')!==ph){if(ph)r.dataset.phase=ph;else delete r.dataset.phase}}
 function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fill(8)}}
 function startGame(mode,opt){
-  opt=opt||{};clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
+  opt=opt||{};closeMenu();clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
   reset(mode);AIS=[];netAIs=new Map();clearCards();g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
   if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
   if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name));else for(const r of ro)netAIs.set(r.id,{name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
@@ -563,7 +598,7 @@ function ko(){
     g.cur=null;g.clearing=null;g.koT=0;g.respawn=1100;g.incoming=[];stamp($('stamp'));if(g.mode==='online')pres({dl:g.dl,b:enc()});return}
   if(g.out)return;
   g.running=false;g.over=true;g.cur=null;g.clearing=null;g.koT=0;musStop();setPhase('');stamp($('stamp'));
-  overlay('KO',`分數 ${g.score}・消了 ${g.lines} 行・送出 ${g.sent} 攻擊`,'再來一局',()=>startGame('solo',soloOpt()));
+  overlay('KO',`分數 ${g.score}・消了 ${g.lines} 行`);setTimeout(()=>{if(!g.running)openMenu('solo',`KO・分數 ${g.score}・消 ${g.lines} 行・攻擊 ${g.sent}`)},1400);
 }
 function respawn(){g.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));if(g.dig)fillDig();g.koT=null;g.topout=false;g.combo=-1;g.b2b=false;next()}
 function height(){for(let r=HID;r<ROWS;r++)if(g.board[r]&&g.board[r].some(v=>v))return ROWS-r;return 0}
@@ -659,7 +694,6 @@ function showResult(){
     for(const v of[same?'同':'第'+r.place,r.name+(r.out?'・出局':''),r.ko,r.lines,r.h]){const td=document.createElement('td');td.textContent=v;tr.appendChild(td)}tb.appendChild(tr)});
   $('resSub').textContent=solo1?`被 KO ${g.dl.length} 次・分數 ${g.score}`:t;$('res').hidden=false;
 }
-$('resOk').onclick=()=>{$('res').hidden=true};
 function win(msg){if(!g.running)return;g.running=false;g.over=true;g.cur=null;musStop();setPhase('');wins++;SND.win();pres({st:'idle',w:wins});overlay('你贏了',msg||'按「準備」再來一場')}
 
 /* ---------- 輸入 ---------- */
@@ -680,7 +714,7 @@ for(const b of document.querySelectorAll('.pad button')){const k=b.dataset.k;
     if(k==='D'){press('HD');return}press(k)});
   for(const ev of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>release(k));}
 $('pad').addEventListener('contextmenu',e=>e.preventDefault());
-$('bSolo').onclick=()=>{if(M)leaveRoom();startGame('solo',soloOpt())};
+$('bSolo').onclick=async()=>{if(LB)await stopMM();if(M)await leaveRoom();startGame('solo',soloOpt())};
 $('ovB').onclick=()=>startGame('solo',soloOpt());
 
 /* ---------- 手勢操作（雙拇指） ---------- */
@@ -751,13 +785,13 @@ try{const q=new URLSearchParams(location.search).get('r');if(q&&/^[a-z0-9]{1,8}$
 $('bInv').onclick=()=>{const url=`${location.origin}${location.pathname}?r=${$('code').value}`;const done=()=>st('邀請連結已複製：'+url);
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,()=>st('請手動複製：'+url));else st('請手動複製：'+url)};
 $('bRand').onclick=()=>{const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<5;i++)s+=a[rnd(a.length)];$('code').value=s};
-async function leaveRoom(){const m=M;M=null;lastPeers=[];ready=false;goSent=false;expect=null;$('bReady').disabled=true;$('bReady').textContent='準備';if(m)await m.leave().catch(()=>{})}
+async function leaveRoom(){const m=M;M=null;lastPeers=[];ready=false;goSent=false;expect=null;$('bReady').disabled=true;$('bReady').textContent='準備';syncMenu();if(m)await m.leave().catch(()=>{})}
 async function joinRoom(code){
   await leaveRoom();st('進房中…');
   try{M=await R.join('bb-'+code)}catch(e){st(e&&e.code==='limit_reached'?'這個房間已滿（最多 6 人），換一個房號吧。':'進房失敗（'+(e&&e.code||'錯誤')+'），請稍後再試。');return false}
   M.onPeers(ch=>peersChanged(ch.peers),e=>st('連線中斷（'+e.code+'）'));
   M.on('atk',onAtk);M.on('go',onGo);M.on('ai',onAiMsg);
-  fillAI=$('fill').checked;pres({n:nick(),st:'idle',w:wins,fa:fillAI});$('bReady').disabled=false;$('bInv').hidden=inClaude;return true}
+  fillAI=$('fill').checked;pres({n:nick(),st:'idle',w:wins,fa:fillAI});$('bReady').disabled=false;$('bInv').hidden=inClaude;syncMenu();return true}
 $('bJoin').onclick=async()=>{
   if(!R)return;if(LB)await stopMM();const code=$('code').value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
   if(!code){st('請先輸入房號，或按「隨機房號」。');return}
@@ -816,7 +850,7 @@ setInterval(()=>{if(M&&!g.running)maybeGo()},1000);
 
 /* ---------- 快速配對（大廳 mm-lobby，10 秒內成局，不足 6 人 AI 補位） ---------- */
 let LB=null,mmTimer=null,mmT0=0,mmSeen=new Map(),mmLast=0;
-async function stopMM(){clearInterval(mmTimer);mmTimer=null;const l=LB;LB=null;$('bQuick').textContent='快速配對';if(l)await l.leave().catch(()=>{})}
+async function stopMM(){clearInterval(mmTimer);mmTimer=null;const l=LB;LB=null;$('bQuick').textContent='開始配對';if(l)await l.leave().catch(()=>{})}
 $('bQuick').onclick=async()=>{
   if(LB){await stopMM();st('已取消配對。');return}
   if(!R)return;await leaveRoom();try{localStorage.setItem('bb-nick',nick())}catch(_){}st('連線到配對大廳…');
@@ -836,13 +870,30 @@ async function onMatch(m){const d=m.data||{};if(!LB||!Array.isArray(d.ids)||type
   await stopMM();$('code').value=d.room;$('fill').checked=true;
   const okJoin=await joinRoom(d.room);if(!okJoin)return;
   expect={n:Math.min(6,d.ids.length),deadline:Date.now()+6000};ready=true;$('bReady').textContent='取消準備';
-  fillAI=true;pres({st:'ready',n:nick(),w:wins,dg:$('dig').checked,fa:true});overlay('配對成功',`${d.ids.length} 位玩家${d.ids.length<6?'＋AI 補位':''}・準備開始…`);maybeGo();
+  fillAI=true;pres({st:'ready',n:nick(),w:wins,dg:$('dig').checked,fa:true});closeMenu();overlay('配對成功',`${d.ids.length} 位玩家${d.ids.length<6?'＋AI 補位':''}・準備開始…`);maybeGo();
 }
+
+/* ---------- 開始選單 ---------- */
+function syncMenu(){
+  const foe=$('foe').value,isAI=!!AIL[foe],n=+$('ainum').value;
+  for(const box of document.querySelectorAll('.chips[data-for]')){const v=$(box.dataset.for).value;for(const b of box.children)b.classList.toggle('on',b.dataset.v===v)}
+  for(const b of document.querySelectorAll('[data-tog]'))b.classList.toggle('on',$(b.dataset.tog).checked||(b.dataset.tog==='timed'&&isAI));
+  $('rowNum').hidden=!isAI;$('numHint').textContent=n===1?'1 對 1':`${n+1} 人混戰`;$('togTimed').disabled=isAI;
+  const inR=!!M;$('inRoom').hidden=!inR;$('bJoin').hidden=inR;$('code').disabled=inR;$('bRand').disabled=inR;
+}
+function menuTab(t){for(const b of document.querySelectorAll('.tabs button'))b.classList.toggle('on',b.dataset.tab===t);for(const p of document.querySelectorAll('.pane'))p.hidden=p.dataset.pane!==t;$('menu').dataset.tab=t}
+function openMenu(tab,msg){const m=$('menu');m.hidden=false;overlay(null);if(tab)menuTab(tab);const mm=$('menuMsg');mm.textContent=msg||'';mm.hidden=!msg;$('bSolo').textContent=msg&&(tab||'solo')==='solo'?'再來一局':'開始';syncMenu()}
+function closeMenu(){$('menu').hidden=true}
+for(const b of document.querySelectorAll('.tabs button'))b.addEventListener('click',()=>menuTab(b.dataset.tab));
+for(const box of document.querySelectorAll('.chips[data-for]'))for(const b of box.children)b.addEventListener('click',()=>{$(box.dataset.for).value=b.dataset.v;syncMenu()});
+for(const b of document.querySelectorAll('[data-tog]'))b.addEventListener('click',()=>{if(b.disabled)return;const c=$(b.dataset.tog);c.checked=!c.checked;c.dispatchEvent(new Event('change'));syncMenu()});
+$('bLeave').onclick=async()=>{await leaveRoom();st('已離開房間。');syncMenu()};
+$('resOk').onclick=()=>{$('res').hidden=true;openMenu(g.mode==='online'&&M?'room':'solo',$('resSub').textContent)};
 
 /* ---------- 主迴圈 ---------- */
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(100,now-last);last=now;try{update(dt)}catch(e){console.error(e)}try{draw();drawFoes()}catch(e){console.error(e)}}
-reset('solo');g.over=true;requestAnimationFrame(loop);
+reset('solo');g.over=true;openMenu(new URLSearchParams(location.search).get('r')?'room':'solo');requestAnimationFrame(loop);
 }
 </script>
 </body>
