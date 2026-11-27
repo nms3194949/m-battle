@@ -8,9 +8,9 @@
     "binding": "ASSETS"
   },
   "durable_objects": {
-    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }, { "name": "ARCHIVE", "class_name": "Archive" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Archive"] }],
   "routes": [{ "pattern": "game.momowinwin.com", "custom_domain": true }],
   "observability": { "enabled": true }
 }

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>M Battle 管理後台</title>
+<style>
+:root{--ink:#16181d;--mut:#5d6472;--line:#e3e6ec;--acc:#2f74ff;--ok:#2fb52a;--bad:#ff3d5a;--bg:#f4f6f9}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Noto Sans TC",sans-serif}
+header{background:#16181d;color:#fff;padding:14px max(4vw,14px);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:18px}
+header .sp{flex:1}
+input,button,select{font:inherit;min-height:40px;border-radius:10px}
+input{border:1px solid #c9ced8;padding:0 10px;background:#fff}
+button{border:0;background:var(--acc);color:#fff;padding:0 14px;font-weight:700;cursor:pointer}
+button.gray{background:#6b707c}button.red{background:var(--bad)}button.green{background:var(--ok)}
+button:focus-visible,input:focus-visible{outline:3px solid #ffd21f;outline-offset:2px}
+main{max-width:1100px;margin:0 auto;padding:18px max(3vw,12px) 60px;display:grid;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{margin:0 0 10px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.kpi b{display:block;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}.kpi span{color:var(--mut);font-size:13px}
+.bar{height:10px;background:#e9ecf2;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ok)}
+.bar.warn i{background:#ffb21a}.bar.full i{background:var(--bad)}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.tog:last-child{border:0}
+.tog small{display:block;color:var(--mut)}
+.sw{position:relative;width:52px;height:30px;flex:none}.sw input{opacity:0;width:0;height:0}.sw span{position:absolute;inset:0;background:#c9ced8;border-radius:16px;transition:.2s;cursor:pointer}
+.sw span::after{content:"";position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+span{background:var(--ok)}.sw input:checked+span::after{left:26px}
+.num{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:center;padding:6px 0}.num small{color:var(--mut);display:block}
+.num input{width:100%;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--mut);font-weight:600}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.alerts li{margin:4px 0}.alerts time{color:var(--mut);font-size:12px;margin-right:6px}
+.msg{min-height:22px;color:var(--mut);font-size:13px}
+#app[hidden],#login[hidden]{display:none}
+.tiers{display:flex;gap:4px;align-items:flex-end;height:90px}.tiers div{flex:1;background:var(--acc);border-radius:4px 4px 0 0;position:relative;min-height:2px}
+.tiers div span{position:absolute;bottom:100%;left:0;right:0;text-align:center;font-size:11px;color:var(--mut)}
+.tlab{display:flex;gap:4px;font-size:11px;color:var(--mut)}.tlab span{flex:1;text-align:center}
+</style>
+</head>
+<body>
+<header><h1>M Battle 管理後台</h1><span class="sp"></span><span id="who" class="msg" style="color:#c9cdd6"></span><button class="gray" id="logout" hidden>登出</button></header>
+<main>
+  <section class="card" id="login">
+    <h2>輸入管理密碼</h2>
+    <p class="msg">密碼是你在 Cloudflare 設定的 <code>ADMIN_KEY</code>。只會存在這個分頁，關掉就要重新輸入。</p>
+    <form class="row" id="lf"><input id="key" type="password" placeholder="管理密碼" autocomplete="current-password" style="flex:1"><button>登入</button></form>
+    <p class="msg" id="lmsg"></p>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card">
+      <h2>今日用量（UTC 日期，台灣時間早上 8 點重置）</h2>
+      <div class="grid">
+        <div class="kpi"><span>線上連線</span><b id="kConn">–</b><div class="bar" id="connBar"><i style="width:0"></i></div><span id="kConnPct"></span></div>
+        <div class="kpi"><span>配對大廳進出</span><b id="kLobby">–</b></div>
+        <div class="kpi"><span>收到錄影／擋下</span><b id="kUpl">–</b></div>
+        <div class="kpi"><span>錄影對手被使用</span><b id="kGhost">–</b></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="gray" id="refresh">重新整理</button><button class="gray" id="resetToday">今日連線計數歸零</button><span class="msg" id="amsg"></span></div>
+    </section>
+
+    <section class="card">
+      <h2>開關</h2>
+      <div class="tog"><div><b>線上對戰</b><small>關掉後好友房、快速配對都無法連線，單人照常可玩</small></div><label class="sw"><input type="checkbox" data-k="online"><span></span></label></div>
+      <div class="tog"><div><b>接收錄影</b><small>關掉後玩家打完不會再上傳紀錄（遇到洗紀錄時先關這個）</small></div><label class="sw"><input type="checkbox" data-k="recording"><span></span></label></div>
+      <div class="tog"><div><b>使用錄影對手</b><small>關掉後單人「真人紀錄」和配對補位都改用 AI</small></div><label class="sw"><input type="checkbox" data-k="ghosts"><span></span></label></div>
+    </section>
+
+    <section class="card">
+      <h2>上限與防洗設定</h2>
+      <div class="num"><div>每日線上連線上限<small>0＝不限。免費方案建議 3000～3500（約 600 場）</small></div><input type="number" min="0" data-k="connCap"></div>
+      <div class="num"><div>用量達幾 % 發通知</div><input type="number" min="1" max="100" data-k="warnPct"></div>
+      <div class="num"><div>每個等級最多保留幾筆錄影<small>共 8 個等級；每筆約 2～5 KB</small></div><input type="number" min="10" data-k="maxPerTier"></div>
+      <div class="num"><div>錄影保留天數<small>超過自動刪除</small></div><input type="number" min="1" data-k="maxDays"></div>
+      <div class="num"><div>同一玩家每天最多上傳</div><input type="number" min="1" data-k="uidPerDay"></div>
+      <div class="num"><div>同一 IP 每天最多上傳</div><input type="number" min="1" data-k="ipPerDay"></div>
+      <div class="num"><div>每秒放置方塊上限<small>超過視為 AI／外掛，不收</small></div><input type="number" min="1" step="0.1" data-k="maxPps"></div>
+      <div class="num"><div>每分鐘攻擊上限<small>超過不收</small></div><input type="number" min="1" data-k="maxApm"></div>
+      <div class="row" style="margin-top:8px"><button id="save">儲存設定</button><span class="msg" id="smsg"></span></div>
+    </section>
+
+    <section class="card">
+      <h2>錄影紀錄庫</h2>
+      <p class="msg" id="tot"></p>
+      <div class="tiers" id="tiers"></div><div class="tlab" id="tlab"></div>
+      <h2 style="margin-top:16px">上傳最多的玩家</h2>
+      <div class="scroll"><table><thead><tr><th>玩家</th><th>ID</th><th class="n">筆數</th><th class="n">最高 APM</th><th></th></tr></thead><tbody id="top"></tbody></table></div>
+      <h2 style="margin-top:16px">最近上傳</h2>
+      <div class="scroll"><table><thead><tr><th>時間</th><th>玩家</th><th class="n">APM</th><th class="n">消行</th><th class="n">等級</th><th>IP</th><th></th></tr></thead><tbody id="recent"></tbody></table></div>
+      <div class="row" style="margin-top:12px">
+        <input id="pName" placeholder="暱稱#編號 或 玩家ID" style="flex:1;min-width:180px"><button class="red" id="pDel">刪除這個玩家的紀錄</button><button class="red" id="pBan">封鎖並刪除</button>
+      </div>
+      <div class="row" style="margin-top:8px"><button class="red" id="purgeAll">清空全部紀錄</button><span class="msg" id="pmsg"></span></div>
+    </section>
+
+    <section class="card">
+      <h2>通知</h2>
+      <p class="msg" id="lineState"></p>
+      <div class="row"><button class="gray" id="testNotify">發送測試通知</button></div>
+      <ul class="alerts" id="alerts"></ul>
+    </section>
+  </div>
+</main>
+<script>
+{
+const $=id=>document.getElementById(id);
+let KEY='';try{KEY=sessionStorage.getItem('mb-admin')||''}catch(_){}
+const api=async(path,body)=>{const r=await fetch('/api/admin/'+path,{method:body?'POST':'GET',headers:{'x-admin':KEY,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});if(r.status===401)throw new Error('auth');return r.json()};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=t=>new Date(t).toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+let cfg={};
+async function load(){
+  let d;try{d=await api('stats')}catch(e){showLogin(e.message==='auth'?'密碼不對，或 Cloudflare 還沒設定 ADMIN_KEY。':'連不上伺服器。');return}
+  $('login').hidden=true;$('app').hidden=false;$('logout').hidden=false;cfg=d.cfg;
+  const t=d.days[0];$('kConn').textContent=t.conn;$('kLobby').textContent=t.lobby;$('kUpl').textContent=t.upl+' / '+t.rej;$('kGhost').textContent=t.ghost;
+  const pct=cfg.connCap?Math.min(100,Math.round(t.conn/cfg.connCap*100)):0,bar=$('connBar');bar.firstElementChild.style.width=pct+'%';bar.className='bar'+(pct>=100?' full':pct>=cfg.warnPct?' warn':'');
+  $('kConnPct').textContent=cfg.connCap?`上限 ${cfg.connCap}（${pct}%）`:'不限';
+  for(const el of document.querySelectorAll('[data-k]')){const k=el.dataset.k;if(el.type==='checkbox')el.checked=!!cfg[k];else el.value=cfg[k]}
+  $('tot').textContent=`共 ${d.total.n} 筆，約 ${(d.total.bytes/1024).toFixed(1)} KB；封鎖 ${d.bans} 位玩家`;
+  const counts=d.tierEdges.map((_,i)=>(d.tiers.find(x=>x.tier===i)||{n:0}).n),mx=Math.max(1,...counts);
+  $('tiers').innerHTML=counts.map(n=>`<div style="height:${Math.max(2,n/mx*100)}%"><span>${n}</span></div>`).join('');
+  $('tlab').innerHTML=d.tierEdges.map((e,i)=>`<span>${e}${i===d.tierEdges.length-1?'+':'–'+(d.tierEdges[i+1]-1)}</span>`).join('');
+  $('top').innerHTML=d.top.map(r=>`<tr><td>${esc(r.name)}#${esc(r.tag)}</td><td><code>${esc(r.uid)}</code></td><td class="n">${r.n}</td><td class="n">${r.apm}</td><td><button class="red" data-ban="${esc(r.uid)}">封鎖</button></td></tr>`).join('')||'<tr><td colspan="5">還沒有紀錄</td></tr>';
+  $('recent').innerHTML=d.recent.map(r=>`<tr><td>${fmt(r.created)}</td><td>${esc(r.name)}#${esc(r.tag)}</td><td class="n">${r.apm}</td><td class="n">${r.lines}</td><td class="n">${r.tier}</td><td>${esc(r.ip)}</td><td><button class="gray" data-del="${r.id}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">還沒有紀錄</td></tr>';
+  $('lineState').textContent=d.line?'LINE 通知已設定：用量警示會推送到你的 LINE。':'尚未設定 LINE 通知（LINE_TOKEN、LINE_TO）。警示只會記錄在下方。';
+  $('alerts').innerHTML=d.alerts.map(a=>`<li><time>${fmt(a.t)}</time>${esc(a.text)}</li>`).join('')||'<li class="msg">目前沒有通知</li>';
+}
+function showLogin(m){$('login').hidden=false;$('app').hidden=true;$('logout').hidden=true;$('lmsg').textContent=m||''}
+$('lf').onsubmit=e=>{e.preventDefault();KEY=$('key').value.trim();try{sessionStorage.setItem('mb-admin',KEY)}catch(_){}load()};
+$('logout').onclick=()=>{KEY='';try{sessionStorage.removeItem('mb-admin')}catch(_){}showLogin('已登出')};
+$('refresh').onclick=load;
+
+for(const el of document.querySelectorAll('input[type=checkbox][data-k]'))el.addEventListener('change',async()=>{await api('config',{[el.dataset.k]:el.checked});load()});
+$('save').onclick=async()=>{const b={};for(const el of document.querySelectorAll('input[type=number][data-k]'))b[el.dataset.k]=Number(el.value);await api('config',b);$('smsg').textContent='已儲存';load()};
+document.addEventListener('click',async e=>{const d=e.target.closest('[data-del]'),bn=e.target.closest('[data-ban]');
+  if(d){await api('purge',{id:+d.dataset.del});load()}
+  if(bn){await api('ban',{uid:bn.dataset.ban});$('pmsg').textContent='已封鎖並刪除';load()}});
+const who=()=>{const v=$('pName').value.trim();return /^[0-9a-z]{12}$/.test(v)?{uid:v}:{name:v}};
+let armed=null;const twice=(btn,fn)=>{if(armed!==btn){armed=btn;btn.dataset.t=btn.textContent;btn.textContent='再按一次確認';setTimeout(()=>{if(armed===btn){armed=null;btn.textContent=btn.dataset.t}},3000);return}armed=null;btn.textContent=btn.dataset.t;fn()};
+$('pDel').onclick=e=>{const w=who();if(!w.uid&&!w.name)return;twice(e.currentTarget,async()=>{await api('purge',w);$('pmsg').textContent='已刪除';load()})};
+$('pBan').onclick=e=>{const w=who();if(!w.uid){$('pmsg').textContent='封鎖需要輸入玩家 ID（12 碼，可在「上傳最多的玩家」看到）';return}twice(e.currentTarget,async()=>{await api('ban',w);$('pmsg').textContent='已封鎖並刪除';load()})};
+$('resetToday').onclick=e=>twice(e.currentTarget,async()=>{await api('resetToday',{});$('amsg').textContent='已歸零';load()});
+$('purgeAll').onclick=e=>twice(e.currentTarget,async()=>{await api('purge',{all:true});$('pmsg').textContent='已清空';load()});
+$('testNotify').onclick=async()=>{const r=await api('notify',{});$('lineState').textContent=r.line?'已送出，請看 LINE。':'已記錄（未設定 LINE，所以只會出現在下方）。';load()};
+if(KEY)load();else showLogin('');
+}
+</script>
+</body>
+</html>
