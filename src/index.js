@@ -236,6 +236,8 @@ export class Archive extends DurableObject {
       const t = tierOf(apm);
       let rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE tier BETWEEN ? AND ? AND uid<>? ORDER BY RANDOM() LIMIT ?", Math.max(0, t - 1), t + 1, uid, n).toArray();
       if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE uid<>? AND id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", uid, n - rows.length).toArray());
+      // 別人的紀錄不夠時，用自己的紀錄補（測試初期或冷門等級）
+      if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", n - rows.length).toArray());
       this.bump("ghost", rows.length);
       return json({ list: rows.map((r) => ({ id: r.id, name: r.name, tag: r.tag, apm: r.apm, rec: r.data })) });
     }

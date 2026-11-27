@@ -395,7 +395,7 @@ function lockPiece(){
     const C=[[0,0],[2,0],[2,2],[0,2]];const c=C.filter(([x,y])=>occ(x,y)).length;
     if(c>=3){ts=true;const f1=C[p.r],f2=C[(p.r+1)%4];mini=!(occ(...f1)&&occ(...f2))&&g.lastKick!==4}
   }
-  if(g.rec&&g.rec.length<1200)g.rec.push(Math.round(g.t)+','+NAMES.indexOf(p.t)+','+p.r+','+p.x);
+  if(g.rec&&!g.recStop&&g.rec.length<1200)g.rec.push(Math.round(g.t)+','+NAMES.indexOf(p.t)+','+p.r+','+p.x);
   const full=[];for(let r=0;r<ROWS;r++)if(g.board[r].every(v=>v)&&!g.board[r].every(v=>v===8))full.push(r);
   const n=full.length;
   g.cur=null;
@@ -594,7 +594,7 @@ function setPhase(ph){const r=document.documentElement;if((r.dataset.phase||'')!
 function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fill(8)}}
 function startGame(mode,opt){
   opt=opt||{};closeMenu();clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
-  reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
+  reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.recStop=false;g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
   if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1];AIS.push(aiMake('ai'+i,'ai2',!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:''):`AI ${i}・普通`,gh?gh.rec:null))}opt.timed=true}
   if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
   if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name,(hostGhosts[r.id]||{}).rec));else for(const r of ro)netAIs.set(r.id,{name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
@@ -609,7 +609,7 @@ function ko(){
   SND.ko();shake=10;
   if(g.timed&&g.running&&!g.out){const killer=g.lastHit&&g.t-g.lastHit.t<20000?g.lastHit.id:'-';g.dl.push(killer);
     if(g.elim){g.pl=aliveCount();g.out=true;g.cur=null;g.clearing=null;g.koT=0;g.incoming=[];stamp($('stamp'));setTimeout(()=>{if(g.out&&g.running)overlay(ordinal(g.pl),'你出局了・觀戰到比賽結束')},900);if(g.mode==='online')pres({out:true,pl:g.pl,dl:g.dl,b:enc()});return}
-    g.cur=null;g.clearing=null;g.koT=0;g.respawn=1100;g.incoming=[];stamp($('stamp'));if(g.mode==='online')pres({dl:g.dl,b:enc()});return}
+    g.recStop=true;g.cur=null;g.clearing=null;g.koT=0;g.respawn=1100;g.incoming=[];stamp($('stamp'));if(g.mode==='online')pres({dl:g.dl,b:enc()});return}
   if(g.out)return;
   g.running=false;g.over=true;g.cur=null;g.clearing=null;g.koT=0;musStop();setPhase('');stamp($('stamp'));
   overlay('KO',`分數 ${g.score}・消了 ${g.lines} 行`);setTimeout(()=>{if(!g.running)openMenu('solo',`KO・分數 ${g.score}・消 ${g.lines} 行・攻擊 ${g.sent}`)},1400);
@@ -620,7 +620,7 @@ function checkEnd(){const alive=everyone().filter(p=>!p.out);if(alive.length<=1)
 function timeUp(){endMatch()}
 let myApm=20;try{myApm=+localStorage.getItem('bb-apm')||20}catch(_){}
 function uploadRec(){
-  const rec=g.rec||[],dur=(g.t||0)/1000;if(!g.timed||rec.length<20||dur<20)return;
+  const rec=g.rec||[],dur=(g.recStop&&rec.length?+rec[rec.length-1].split(',')[0]:(g.t||0))/1000;if(!g.timed||rec.length<20||dur<20)return;
   const apm=g.sent/dur*60;myApm=Math.round((myApm*.7+apm*.3)*10)/10;try{localStorage.setItem('bb-apm',myApm)}catch(_){}
   if(!SRV)return;
   fetch('/api/replay',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uid:UID,name:nick(),tag:TAG,sent:g.sent,lines:g.lines,rec:rec.join(';')})}).catch(()=>{});
