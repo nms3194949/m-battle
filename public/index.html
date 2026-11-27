@@ -236,7 +236,7 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
     <div class="row"><input id="nick" maxlength="12" placeholder="暱稱"><input id="code" maxlength="8" placeholder="房號（英數）" autocapitalize="off"></div>
     <div class="row"><button id="bRand">隨機房號</button><button id="bJoin">進房</button><button class="go" id="bReady" disabled>準備</button><button id="bInv" hidden>複製邀請連結</button></div>
     <label class="chk"><input type="checkbox" id="fill"> 人數不足時用 AI 補到 6 人（房主電腦負責跑 AI）</label>
-    <p class="status">準心：點對手的盤面選擇攻擊目標（鍵盤 Tab 切換）。3 人以上被 KO 就出局，最後存活或時間到依 KO、消行、高度排名。</p>
+    <p class="status">準心：多人時會在對手之間隨機跳動，攻擊打向準心所在的對手；也可以點盤面（鍵盤 Tab）暫時指定。3 人以上被 KO 就出局，最後存活或時間到依 KO、消行、高度排名。</p>
     <p class="status" id="st">連線中…</p>
   </section>
   <p class="keys">鍵盤：← → 移動・↓ 加速・空白鍵 落下・↑ / X 順轉・Z 逆轉・C / Shift 暫存</p>
@@ -285,7 +285,7 @@ const SND={
   combo:n=>{const sc=[0,2,4,5,7,9,11,12,14,16,17,19,21,23,24],m=76+sc[Math.min(n-1,sc.length-1)],f=mf(m),d=.06;
     tone(f,.42,'sine',.22,0,d);tone(f*2,.3,'sine',.09,0,d);tone(f*3,.18,'triangle',.04,0,d);noise(.05,.06,5000,d,null,true);
     if(n>=4)tone(mf(m+7),.36,'sine',.12,0,d+.07);if(n>=7){tone(mf(m+12),.32,'sine',.1,0,d+.14);tone(mf(m+16),.3,'triangle',.05,0,d+.2)}},
-  atk:()=>{tone(260,.28,'sawtooth',.06,1400);noise(.25,.06,2000,0,null,true)},
+  atk:()=>{tone(1055,.035,'square',.06);noise(.22,.09,1200,0,null,true);tone(200,.26,'sine',.42,95,.06);tone(667,.32,'triangle',.11,0,.06);tone(753,.3,'triangle',.09,0,.06);tone(1334,.16,'sine',.04,0,.07)},
   garb:()=>{noise(.3,.25,380);tone(120,.28,'square',.1,55)},
   ko:()=>[76,72,67,64,55].forEach((m,i)=>tone(mf(m),.14,'square',.1,0,i*.09)),
   count:hi=>tone(hi?1046:523,hi?.25:.12,'square',.1),
@@ -397,6 +397,7 @@ function update(dt){
   try{aisStep(dt)}catch(e){console.error(e)}
   if(g.elim&&checkEnd())return;
   if(g.out)return;
+  g.tgT=(g.tgT||0)-dt;if(g.tgT<=0){g.tgT=1400+rnd(1600);const l=foes().filter(f=>!f.out);if(l.length>1){const c=l.filter(f=>f.id!==g.target);g.target=c[rnd(c.length)].id}}
   if(g.respawn>0){g.respawn-=dt;if(g.respawn<=0)respawn();return}
   if(g.mode==='solo'&&$('foe').value==='cpu'){cpuT-=dt;if(cpuT<=0){{const n=1+rnd(3);g.incoming.push({n,h:g.hole,due:g.t+520});incomingFx(n)}cpuT=6000+rnd(5000)}}
   if(!g.clearing&&g.incoming.length&&g.incoming[0].due<=g.t)riseNow();
@@ -592,7 +593,7 @@ const everyone=()=>[meP(),...foes()];
 function koOf(id,all){let k=0;for(const p of all)for(const x of p.dl||[])if(x===id)k++;return k}
 const aliveCount=()=>everyone().filter(p=>!p.out).length;
 function curTarget(list){list=(list||foes()).filter(f=>!f.out);if(!list.length)return null;let t=list.find(f=>f.id===g.target);if(!t){t=list[0];g.target=t.id}return t}
-function setTarget(id){const f=foes().find(x=>x.id===id&&!x.out);if(f&&g.running&&!g.out){g.target=id;SND.move()}}
+function setTarget(id){const f=foes().find(x=>x.id===id&&!x.out);if(f&&g.running&&!g.out){g.target=id;g.tgT=2500;SND.move()}}
 function cycleTarget(){const l=foes().filter(f=>!f.out);if(l.length<2)return;const i=l.findIndex(f=>f.id===g.target);g.target=l[(i+1)%l.length].id;SND.move()}
 
 /* ---------- AI 對手（可多開） ---------- */
