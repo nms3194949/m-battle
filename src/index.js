@@ -266,7 +266,7 @@ export class Archive extends DurableObject {
         const tiers = this.sql.exec("SELECT tier, COUNT(*) n, SUM(plat='m') m, SUM(plat='pc') pc FROM replays GROUP BY tier").toArray();
         const total = this.sql.exec("SELECT COUNT(*) n, COALESCE(SUM(LENGTH(data)),0) bytes FROM replays").toArray()[0];
         const recent = this.sql.exec("SELECT id,uid,name,tag,apm,lines,tier,created,ip,plat FROM replays ORDER BY id DESC LIMIT 40").toArray();
-        const top = this.sql.exec("SELECT uid,name,tag,COUNT(*) n,MAX(apm) apm FROM replays GROUP BY uid ORDER BY n DESC LIMIT 15").toArray();
+        const top = this.sql.exec("SELECT uid,name,tag,MAX(plat) plat,COUNT(*) n,MAX(apm) apm FROM replays GROUP BY uid ORDER BY n DESC LIMIT 15").toArray();
         return json({ ok: true, cfg: c, days, tiers, total, recent, top, tierEdges: TIERS, alerts: this.get("alerts", []), bans: this.get("bans", []).length, line: !!(this.env.LINE_TOKEN && this.env.LINE_TO) });
       }
       if (a === "config" && request.method === "POST") {
@@ -283,7 +283,7 @@ export class Archive extends DurableObject {
         else if (b.id) this.sql.exec("DELETE FROM replays WHERE id=?", Number(b.id));
         else if (b.uid) this.sql.exec("DELETE FROM replays WHERE uid=?", String(b.uid));
         else if (b.ip) this.sql.exec("DELETE FROM replays WHERE ip=?", String(b.ip));
-        else if (b.name) { const [nm, tg] = String(b.name).split("#"); this.sql.exec("DELETE FROM replays WHERE name=? AND (?='' OR tag=?)", nm, tg || "", tg || ""); }
+        else if (b.name) { const [nm, t0] = String(b.name).trim().split("#"), tg = (t0 || "").replace(/m$/i, ""), pl = /m$/i.test(t0 || "") ? "m" : ""; this.sql.exec("DELETE FROM replays WHERE name=? AND (?='' OR tag=?) AND (?='' OR plat=?)", nm, tg, tg, pl, pl); }
         return json({ ok: true });
       }
       if (a === "ban" && request.method === "POST") {

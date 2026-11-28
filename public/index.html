@@ -627,7 +627,7 @@ function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fil
 function startGame(mode,opt){
   opt=opt||{};closeMenu();musStop();clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
   reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.recStop=false;g.kb=0;g.tc=0;g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
-  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1],gs=gh?starsOf(gh.apm):(opt.star||Math.min(myStars(),BEST)),lv=STARLV[gs]||'ai2';AIS.push(aiMake('ai'+i,lv,!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl?' '+PICON[gh.pl]:''):`AI ${i}・${AIL[lv].short}`,gh?gh.rec:null,gs))}opt.timed=true}
+  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1],gs=gh?starsOf(gh.apm):(opt.star||Math.min(myStars(),BEST)),lv=STARLV[gs]||'ai2';AIS.push(aiMake('ai'+i,lv,!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl==='m'?'M':''):`AI ${i}・${AIL[lv].short}`,gh?gh.rec:null,gs))}opt.timed=true}
   if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
   if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name,(hostGhosts[r.id]||{}).rec,r.sr));else for(const r of ro)netAIs.set(r.id,{sr:r.sr||2,name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
   g.elim=(1+(mode==='solo'?AIS.length:Math.max(1,(opt.humans||2)-1)+(opt.ais||[]).length))>2;
@@ -651,7 +651,7 @@ function height(){for(let r=HID;r<ROWS;r++)if(g.board[r]&&g.board[r].some(v=>v))
 function checkEnd(){const alive=everyone().filter(p=>!p.out);if(alive.length<=1){endMatch();return true}return false}
 function timeUp(){endMatch()}
 // 手機（觸控）與電腦（鍵盤）分開計算：星級、最高紀錄、錄影配對
-const PLAT=matchMedia('(pointer:coarse)').matches?'m':'pc',PICON={m:'📱',pc:'💻'};
+const PLAT=matchMedia('(pointer:coarse)').matches?'m':'pc',SUF=PLAT==='m'?'M':'';
 function lsGet(k){try{return localStorage.getItem(k)}catch(_){return null}}function lsSet(k,v){try{localStorage.setItem(k,v)}catch(_){}}
 if(lsGet('bb-apm')!==null&&lsGet('bb-apm-'+PLAT)===null){lsSet('bb-apm-'+PLAT,lsGet('bb-apm'));if(lsGet('bb-best'))lsSet('bb-best-'+PLAT,lsGet('bb-best'))}
 let myApm=+lsGet('bb-apm-'+PLAT)||20;
@@ -677,7 +677,7 @@ function endMatch(){
 let AIS=[],netAIs=new Map(),lastPeers=[];
 const myId=()=>g.mode==='online'&&me?me:'me';
 function aiFoe(a){return{id:a.id,kind:'ai',sr:a.sr,name:a.name,b:aEnc(a),dl:a.dl,out:a.out,pl:a.pl,l:a.lines,h:aHeight(a),st:'play',lb:a.lb,lq:a.lq,cb:a.cb}}
-function netFoes(){return lastPeers.filter(p=>!p.sameTab&&p.kind==='viewer').map(p=>{const pr=p.presence||{};return{id:p.peer,kind:'net',sr:Math.max(1,Math.min(5,(p.presence||{}).sr|0||2)),name:(typeof pr.n==='string'?pr.n.slice(0,12):'玩家')+(typeof pr.tg==='string'&&/^\d{4}$/.test(pr.tg)?'#'+pr.tg:'')+(PICON[pr.pl]?' '+PICON[pr.pl]:''),b:typeof pr.b==='string'?pr.b:'',
+function netFoes(){return lastPeers.filter(p=>!p.sameTab&&p.kind==='viewer').map(p=>{const pr=p.presence||{};return{id:p.peer,kind:'net',sr:Math.max(1,Math.min(5,(p.presence||{}).sr|0||2)),name:(typeof pr.n==='string'?pr.n.slice(0,12):'玩家')+(typeof pr.tg==='string'&&/^\d{4}$/.test(pr.tg)?'#'+pr.tg:'')+(pr.pl==='m'?'M':''),b:typeof pr.b==='string'?pr.b:'',
   dl:Array.isArray(pr.dl)?pr.dl.slice(0,40).map(String):[],out:!!pr.out,pl:Math.max(0,Math.min(6,pr.pl|0)),l:Math.max(0,pr.l|0),h:Math.max(0,Math.min(20,pr.h|0)),st:typeof pr.st==='string'?pr.st:'idle',lb:pr.lb,lq:pr.lq,cb:pr.cb|0}})}
 function foes(){
   if(g.mode==='solo')return AIS.map(aiFoe);
@@ -685,7 +685,7 @@ function foes(){
   if(me&&me===g.aiHost)list.push(...AIS.map(aiFoe));else for(const[id,s]of netAIs)list.push({...s,id,kind:'ai',st:'play'});
   return list;
 }
-function meP(){return{id:myId(),sr:myStars(),name:fullName()+' '+PICON[PLAT],dl:g.dl||[],out:!!g.out,pl:g.pl||0,l:g.lines||0,h:height(),me:true}}
+function meP(){return{id:myId(),sr:myStars(),name:fullName()+SUF,dl:g.dl||[],out:!!g.out,pl:g.pl||0,l:g.lines||0,h:height(),me:true}}
 const everyone=()=>[meP(),...foes()];
 function koOf(id,all){let k=0;for(const p of all)for(const x of p.dl||[])if(x===id)k++;return k}
 const aliveCount=()=>everyone().filter(p=>!p.out).length;
@@ -840,7 +840,7 @@ const nick=()=>($('nick').value.trim().slice(0,12)||'玩家');
 let UID='',TAG='';try{UID=localStorage.getItem('bb-uid')||'';TAG=localStorage.getItem('bb-tag')||''}catch(_){}
 if(!/^[0-9a-z]{12}$/.test(UID)){UID='';const a='0123456789abcdefghijklmnopqrstuvwxyz';for(let i=0;i<12;i++)UID+=a[rnd(36)];try{localStorage.setItem('bb-uid',UID)}catch(_){}}
 if(!/^\d{4}$/.test(TAG)){TAG=String(rnd(10000)).padStart(4,'0');try{localStorage.setItem('bb-tag',TAG)}catch(_){}}
-$('myTag').textContent='#'+TAG;showMyStar();bumpBest(myStars());buildLvl();
+$('myTag').textContent='#'+TAG+SUF;showMyStar();bumpBest(myStars());buildLvl();
 const fullName=()=>nick()+'#'+TAG;
 const pres=p=>{if(M)M.presence(p).catch(()=>{})};
 /* 自架伺服器（game.momowinwin.com）用的 WebSocket 房間；介面跟 Claude 房間相同 */
@@ -916,7 +916,7 @@ function maybeGo(){
   if(!go)return;
   const ids=rd.map(p=>p.peer).slice(0,6),nAI=wantFill()?Math.max(0,6-ids.length):0;goSent=true;
   (async()=>{const gl=nAI?await fetchGhosts(nAI):[],ais=[];hostGhosts={};
-    for(let i=1;i<=nAI;i++){const gh=gl[i-1],id='ai'+i;ais.push({id,name:gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl?' '+PICON[gh.pl]:''):'AI '+i,lv:'ai2',sr:gh?starsOf(gh.apm):2});if(gh)hostGhosts[id]=gh}
+    for(let i=1;i<=nAI;i++){const gh=gl[i-1],id='ai'+i;ais.push({id,name:gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl==='m'?'M':''):'AI '+i,lv:'ai2',sr:gh?starsOf(gh.apm):2});if(gh)hostGhosts[id]=gh}
     if(!M||g.running){goSent=false;return}
     goGr={ids,ais,dig:$('dig').checked};M.emit('go',{...goGr,host:me}).catch(()=>{goSent=false})})();
 }
