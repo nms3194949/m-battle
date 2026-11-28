@@ -123,12 +123,12 @@ async function load(){
   const pct=cfg.connCap?Math.min(100,Math.round(t.conn/cfg.connCap*100)):0,bar=$('connBar');bar.firstElementChild.style.width=pct+'%';bar.className='bar'+(pct>=100?' full':pct>=cfg.warnPct?' warn':'');
   $('kConnPct').textContent=cfg.connCap?`上限 ${cfg.connCap}（${pct}%）`:'不限';
   for(const el of document.querySelectorAll('[data-k]')){const k=el.dataset.k;if(el.type==='checkbox')el.checked=!!cfg[k];else el.value=cfg[k]}
-  $('tot').textContent=`共 ${d.total.n} 筆，約 ${(d.total.bytes/1024).toFixed(1)} KB；封鎖 ${d.bans} 位玩家`;
+  $('tot').textContent=`共 ${d.total.n} 筆（📱 ${d.tiers.reduce((a,t)=>a+(t.m||0),0)}・💻 ${d.tiers.reduce((a,t)=>a+(t.pc||0),0)}），約 ${(d.total.bytes/1024).toFixed(1)} KB；封鎖 ${d.bans} 位玩家`;
   const counts=d.tierEdges.map((_,i)=>(d.tiers.find(x=>x.tier===i)||{n:0}).n),mx=Math.max(1,...counts);
-  $('tiers').innerHTML=counts.map(n=>`<div style="height:${Math.max(2,n/mx*100)}%"><span>${n}</span></div>`).join('');
+  $('tiers').innerHTML=counts.map((n,i)=>{const t=d.tiers.find(x=>x.tier===i)||{};return `<div title="📱 ${t.m||0}・💻 ${t.pc||0}" style="height:${Math.max(2,n/mx*100)}%"><span>${n}</span></div>`}).join('');
   $('tlab').innerHTML=d.tierEdges.map((e,i)=>`<span>${e}${i===d.tierEdges.length-1?'+':'–'+(d.tierEdges[i+1]-1)}</span>`).join('');
-  $('top').innerHTML=d.top.map(r=>`<tr><td>${esc(r.name)}#${esc(r.tag)}</td><td><code>${esc(r.uid)}</code></td><td class="n">${r.n}</td><td class="n">${r.apm}</td><td><button class="red" data-ban="${esc(r.uid)}">封鎖</button></td></tr>`).join('')||'<tr><td colspan="5">還沒有紀錄</td></tr>';
-  $('recent').innerHTML=d.recent.map(r=>`<tr><td>${fmt(r.created)}</td><td>${esc(r.name)}#${esc(r.tag)}</td><td class="n">${r.apm}</td><td class="n">${r.lines}</td><td class="n">${r.tier}</td><td>${esc(r.ip)}</td><td><button class="gray" data-del="${r.id}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">還沒有紀錄</td></tr>';
+  $('top').innerHTML=d.top.map(r=>`<tr><td>${r.plat==='pc'?'💻':r.plat==='m'?'📱':'❔'} ${esc(r.name)}#${esc(r.tag)}</td><td><code>${esc(r.uid)}</code></td><td class="n">${r.n}</td><td class="n">${r.apm}</td><td><button class="red" data-ban="${esc(r.uid)}">封鎖</button></td></tr>`).join('')||'<tr><td colspan="5">還沒有紀錄</td></tr>';
+  $('recent').innerHTML=d.recent.map(r=>`<tr><td>${fmt(r.created)}</td><td>${r.plat==='pc'?'💻':r.plat==='m'?'📱':'❔'} ${esc(r.name)}#${esc(r.tag)}</td><td class="n">${r.apm}</td><td class="n">${r.lines}</td><td class="n">${r.tier}</td><td>${esc(r.ip)}</td><td><button class="gray" data-del="${r.id}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">還沒有紀錄</td></tr>';
   $('lineState').textContent=d.line?'LINE 通知已設定：用量警示會推送到你的 LINE。':'尚未設定 LINE 通知（LINE_TOKEN、LINE_TO）。警示只會記錄在下方。';
   $('alerts').innerHTML=d.alerts.map(a=>`<li><time>${fmt(a.t)}</time>${esc(a.text)}</li>`).join('')||'<li class="msg">目前沒有通知</li>';
 }

@@ -147,6 +147,7 @@ export class Archive extends DurableObject {
     this.sql = ctx.storage.sql;
     this.sql.exec(`CREATE TABLE IF NOT EXISTS replays(id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, name TEXT, tag TEXT, apm REAL, lines INTEGER, tier INTEGER, created INTEGER, ip TEXT, data TEXT)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS rp_tier ON replays(tier, created)`);
+    try { this.sql.exec(`ALTER TABLE replays ADD COLUMN plat TEXT DEFAULT ''`); } catch (_) {} // v0.8：手機 m／電腦 pc
     this.sql.exec(`CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)`);
   }
 
@@ -183,7 +184,7 @@ export class Archive extends DurableObject {
     const c = this.cfg();
     this.sql.exec("DELETE FROM replays WHERE created < ?", Date.now() - c.maxDays * 86400000);
     for (let t = 0; t < TIERS.length; t++) {
-      this.sql.exec("DELETE FROM replays WHERE tier=? AND id NOT IN (SELECT id FROM replays WHERE tier=? ORDER BY created DESC LIMIT ?)", t, t, c.maxPerTier);
+      for (const pl of ["m", "pc", ""]) this.sql.exec("DELETE FROM replays WHERE tier=? AND plat=? AND id NOT IN (SELECT id FROM replays WHERE tier=? AND plat=? ORDER BY created DESC LIMIT ?)", t, pl, t, pl, c.maxPerTier);
     }
   }
 
@@ -223,8 +224,8 @@ export class Archive extends DurableObject {
       if (pps > c.maxPps || apm > c.maxApm || dur < 20) { this.bump("rej"); return json({ ok: false, why: "filtered" }); }
       if (this.count("u:" + b.uid) >= c.uidPerDay || this.count("ip:" + ip) >= c.ipPerDay) { this.bump("rej"); return json({ ok: false, why: "rate" }); }
       this.bump("u:" + b.uid); this.bump("ip:" + ip); this.bump("upl");
-      this.sql.exec("INSERT INTO replays(uid,name,tag,apm,lines,tier,created,ip,data) VALUES(?,?,?,?,?,?,?,?,?)",
-        b.uid, clean(b.name, 12) || "玩家", clean(b.tag, 4), Math.round(apm * 10) / 10, Math.max(0, b.lines | 0), tierOf(apm), Date.now(), ip, b.rec);
+      this.sql.exec("INSERT INTO replays(uid,name,tag,apm,lines,tier,created,ip,data,plat) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        b.uid, clean(b.name, 12) || "玩家", clean(b.tag, 4), Math.round(apm * 10) / 10, Math.max(0, b.lines | 0), tierOf(apm), Date.now(), ip, b.rec, b.plat === "pc" ? "pc" : "m");
       if (this.count("upl") % 20 === 1) this.pruneOld();
       return json({ ok: true, tier: tierOf(apm) });
     }
@@ -235,22 +236,24 @@ export class Archive extends DurableObject {
       const n = Math.max(1, Math.min(5, Number(url.searchParams.get("n")) || 1));
       const apm = Math.max(0, Number(url.searchParams.get("apm")) || 20), uid = url.searchParams.get("uid") || "";
       const t = tierOf(apm), star = Math.max(0, Math.min(5, Number(url.searchParams.get("star")) | 0));
+      const plat = url.searchParams.get("plat") === "pc" ? "pc" : "m"; // 手機與電腦分開配對（舊紀錄沒有標記，兩邊都可用）
+      const PF = "(plat='" + plat + "' OR plat='') AND ";
       const ids = (r) => r.map((x) => x.id).join(",") || "0";
       let rows;
       if (star) {
         // 玩家指定星級：先找該星級範圍內的紀錄，不夠再找 APM 最接近的
         const [lo, hi] = STAR_APM[star];
-        rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE apm>=? AND apm<? AND uid<>? ORDER BY RANDOM() LIMIT ?", lo, hi, uid, n).toArray();
+        rows = this.sql.exec("SELECT id,name,tag,apm,plat,data FROM replays WHERE " + PF + "apm>=? AND apm<? AND uid<>? ORDER BY RANDOM() LIMIT ?", lo, hi, uid, n).toArray();
         // 不夠時用自己在該星級的紀錄補；仍不夠就由前端補同星級 AI（不跨星級，避免太難）
-        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE apm>=? AND apm<? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", lo, hi, n - rows.length).toArray());
+        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,plat,data FROM replays WHERE " + PF + "apm>=? AND apm<? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", lo, hi, n - rows.length).toArray());
       } else {
-        rows = this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE tier BETWEEN ? AND ? AND uid<>? ORDER BY RANDOM() LIMIT ?", Math.max(0, t - 1), t + 1, uid, n).toArray();
-        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE uid<>? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", uid, n - rows.length).toArray());
+        rows = this.sql.exec("SELECT id,name,tag,apm,plat,data FROM replays WHERE " + PF + "tier BETWEEN ? AND ? AND uid<>? ORDER BY RANDOM() LIMIT ?", Math.max(0, t - 1), t + 1, uid, n).toArray();
+        if (rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,plat,data FROM replays WHERE " + PF + "uid<>? AND id NOT IN (" + ids(rows) + ") ORDER BY RANDOM() LIMIT ?", uid, n - rows.length).toArray());
       }
       // 別人的紀錄不夠時，用自己的紀錄補（測試初期或冷門等級）
-      if (!star && rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,data FROM replays WHERE id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", n - rows.length).toArray());
+      if (!star && rows.length < n) rows = rows.concat(this.sql.exec("SELECT id,name,tag,apm,plat,data FROM replays WHERE " + PF + "id NOT IN (" + (rows.map((r) => r.id).join(",") || "0") + ") ORDER BY RANDOM() LIMIT ?", n - rows.length).toArray());
       this.bump("ghost", rows.length);
-      return json({ list: rows.map((r) => ({ id: r.id, name: r.name, tag: r.tag, apm: r.apm, rec: r.data })) });
+      return json({ list: rows.map((r) => ({ id: r.id, name: r.name, tag: r.tag, apm: r.apm, plat: r.plat || "", rec: r.data })) });
     }
 
     // ---- 管理後台
@@ -260,9 +263,9 @@ export class Archive extends DurableObject {
       if (a === "stats") {
         const days = [];
         for (let i = 0; i < 7; i++) { const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10); days.push({ d, conn: this.count("conn", d), lobby: this.count("lobby", d), upl: this.count("upl", d), rej: this.count("rej", d), ghost: this.count("ghost", d) }); }
-        const tiers = this.sql.exec("SELECT tier, COUNT(*) n FROM replays GROUP BY tier").toArray();
+        const tiers = this.sql.exec("SELECT tier, COUNT(*) n, SUM(plat='m') m, SUM(plat='pc') pc FROM replays GROUP BY tier").toArray();
         const total = this.sql.exec("SELECT COUNT(*) n, COALESCE(SUM(LENGTH(data)),0) bytes FROM replays").toArray()[0];
-        const recent = this.sql.exec("SELECT id,uid,name,tag,apm,lines,tier,created,ip FROM replays ORDER BY id DESC LIMIT 40").toArray();
+        const recent = this.sql.exec("SELECT id,uid,name,tag,apm,lines,tier,created,ip,plat FROM replays ORDER BY id DESC LIMIT 40").toArray();
         const top = this.sql.exec("SELECT uid,name,tag,COUNT(*) n,MAX(apm) apm FROM replays GROUP BY uid ORDER BY n DESC LIMIT 15").toArray();
         return json({ ok: true, cfg: c, days, tiers, total, recent, top, tierEdges: TIERS, alerts: this.get("alerts", []), bans: this.get("bans", []).length, line: !!(this.env.LINE_TOKEN && this.env.LINE_TO) });
       }

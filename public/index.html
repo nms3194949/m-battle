@@ -226,7 +226,7 @@ body[data-ctl=buttons] .gz{display:none}body:not([data-ctl=buttons]) .pad,body:n
 </style>
 </head>
 <body>
-<header><h1>M Battle</h1><small>原型 v0.7</small><div class="snd"><button id="bSfx">音效 開</button><button id="bMus">音樂 開</button></div></header>
+<header><h1>M Battle</h1><small>原型 v0.8</small><div class="snd"><button id="bSfx">音效 開</button><button id="bMus">音樂 開</button></div></header>
 <main>
   <div class="hud">
     <label class="tag me"><i id="sKOme">0</i><input id="nick" class="nick" maxlength="12" placeholder="玩家" aria-label="暱稱（點一下修改）"><b class="mytag" id="myTag">#0000</b><span id="myStar"></span><svg class="pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" fill="none" stroke="#16181d" stroke-width="2.4" stroke-linejoin="round"/></svg></label>
@@ -626,8 +626,8 @@ function setPhase(ph){const r=document.documentElement;if((r.dataset.phase||'')!
 function fillDig(){for(let r=ROWS-DIGROWS;r<ROWS;r++){g.board[r]=Array(COLS).fill(8)}}
 function startGame(mode,opt){
   opt=opt||{};closeMenu();musStop();clearInterval(cdTimer);for(const id of['clabel'])$(id).classList.add('fade');$('clockLab').textContent=opt.dig?'時間・挖掘':'時間';try{document.querySelector('.hud').scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}setPhase('');
-  reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.recStop=false;g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
-  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1],gs=gh?starsOf(gh.apm):(opt.star||Math.min(myStars(),BEST)),lv=STARLV[gs]||'ai2';AIS.push(aiMake('ai'+i,lv,!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:''):`AI ${i}・${AIL[lv].short}`,gh?gh.rec:null,gs))}opt.timed=true}
+  reset(mode);AIS=[];netAIs=new Map();clearCards();g.rec=[];g.recStop=false;g.kb=0;g.tc=0;g.target=null;g.dl=[];g.out=false;g.pl=0;g.lastHit=null;
+  if(mode==='solo'&&opt.foe==='ghost'){const n=Math.max(1,Math.min(5,opt.ainum|0||1)),gl=opt.ghosts||[];for(let i=1;i<=n;i++){const gh=gl[i-1],gs=gh?starsOf(gh.apm):(opt.star||Math.min(myStars(),BEST)),lv=STARLV[gs]||'ai2';AIS.push(aiMake('ai'+i,lv,!!opt.dig,gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl?' '+PICON[gh.pl]:''):`AI ${i}・${AIL[lv].short}`,gh?gh.rec:null,gs))}opt.timed=true}
   if(mode==='solo'&&AIL[opt.foe]){const n=Math.max(1,Math.min(5,opt.ainum|0||1));for(let i=1;i<=n;i++)AIS.push(aiMake('ai'+i,opt.foe,!!opt.dig,n>1?`AI ${i}・${AIL[opt.foe].short}`:AIL[opt.foe].name));opt.timed=true}
   if(mode==='online'){g.aiHost=opt.host||null;const ro=opt.ais||[];if(me&&me===g.aiHost)for(const r of ro)AIS.push(aiMake(r.id,r.lv,!!opt.dig,r.name,(hostGhosts[r.id]||{}).rec,r.sr));else for(const r of ro)netAIs.set(r.id,{sr:r.sr||2,name:r.name,b:'',dl:[],out:false,pl:0,l:0,h:0,lq:0,cb:0})}
   g.elim=(1+(mode==='solo'?AIS.length:Math.max(1,(opt.humans||2)-1)+(opt.ais||[]).length))>2;
@@ -650,14 +650,21 @@ function respawn(){g.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));if(
 function height(){for(let r=HID;r<ROWS;r++)if(g.board[r]&&g.board[r].some(v=>v))return ROWS-r;return 0}
 function checkEnd(){const alive=everyone().filter(p=>!p.out);if(alive.length<=1){endMatch();return true}return false}
 function timeUp(){endMatch()}
-let myApm=20;try{myApm=+localStorage.getItem('bb-apm')||20}catch(_){}
+// 手機（觸控）與電腦（鍵盤）分開計算：星級、最高紀錄、錄影配對
+const PLAT=matchMedia('(pointer:coarse)').matches?'m':'pc',PICON={m:'📱',pc:'💻'};
+function lsGet(k){try{return localStorage.getItem(k)}catch(_){return null}}function lsSet(k,v){try{localStorage.setItem(k,v)}catch(_){}}
+if(lsGet('bb-apm')!==null&&lsGet('bb-apm-'+PLAT)===null){lsSet('bb-apm-'+PLAT,lsGet('bb-apm'));if(lsGet('bb-best'))lsSet('bb-best-'+PLAT,lsGet('bb-best'))}
+let myApm=+lsGet('bb-apm-'+PLAT)||20;
+function matchPlat(){return (g.kb||0)>(g.tc||0)?'pc':(g.tc?'m':PLAT)}
 function uploadRec(){
   const rec=g.rec||[],dur=(g.recStop&&rec.length?+rec[rec.length-1].split(',')[0]:(g.t||0))/1000;if(!g.timed||rec.length<20||dur<20)return;
-  const apm=g.sent/dur*60,s0=myStars();myApm=Math.round((myApm*.7+apm*.3)*10)/10;try{localStorage.setItem('bb-apm',myApm)}catch(_){}const s1=myStars();if(bumpBest(s1))g.starUp=s1;showMyStar();buildLvl();if(M)pres({sr:s1});
+  const apm=g.sent/dur*60,mp=matchPlat();
+  if(mp===PLAT){myApm=Math.round((myApm*.7+apm*.3)*10)/10;lsSet('bb-apm-'+PLAT,myApm);const s1=myStars();if(bumpBest(s1))g.starUp=s1;showMyStar();buildLvl();if(M)pres({sr:s1})}
+  else{const o=+lsGet('bb-apm-'+mp)||20,v=Math.round((o*.7+apm*.3)*10)/10;lsSet('bb-apm-'+mp,v);if(starsOf(v)>(+lsGet('bb-best-'+mp)||2))lsSet('bb-best-'+mp,starsOf(v))}
   if(!SRV)return;
-  fetch('/api/replay',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uid:UID,name:nick(),tag:TAG,sent:g.sent,lines:g.lines,rec:rec.join(';')})}).catch(()=>{});
+  fetch('/api/replay',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({uid:UID,name:nick(),tag:TAG,plat:matchPlat(),sent:g.sent,lines:g.lines,rec:rec.join(';')})}).catch(()=>{});
 }
-async function fetchGhosts(n,star){if(!SRV)return[];try{const r=await fetch(`/api/ghosts?n=${n}&apm=${myApm}&uid=${UID}${star?'&star='+star:''}`);const d=await r.json();return Array.isArray(d.list)?d.list.filter(x=>x&&typeof x.rec==='string').map(x=>({name:String(x.name||'玩家').slice(0,12),tag:/^\d{4}$/.test(x.tag)?x.tag:'',apm:+x.apm||0,rec:x.rec})):[]}catch(_){return[]}}
+async function fetchGhosts(n,star){if(!SRV)return[];try{const r=await fetch(`/api/ghosts?n=${n}&apm=${myApm}&uid=${UID}&plat=${PLAT}${star?'&star='+star:''}`);const d=await r.json();return Array.isArray(d.list)?d.list.filter(x=>x&&typeof x.rec==='string').map(x=>({name:String(x.name||'玩家').slice(0,12),tag:/^\d{4}$/.test(x.tag)?x.tag:'',apm:+x.apm||0,pl:x.plat==='pc'||x.plat==='m'?x.plat:'',rec:x.rec})):[]}catch(_){return[]}}
 async function srvStatus(){if(!SRV)return{online:true};try{return await(await fetch('/api/status')).json()}catch(_){return{online:true}}}
 function endMatch(){
   if(!g.running)return;uploadRec();g.running=false;g.over=true;g.cur=null;g.clearing=null;musStop();
@@ -670,7 +677,7 @@ function endMatch(){
 let AIS=[],netAIs=new Map(),lastPeers=[];
 const myId=()=>g.mode==='online'&&me?me:'me';
 function aiFoe(a){return{id:a.id,kind:'ai',sr:a.sr,name:a.name,b:aEnc(a),dl:a.dl,out:a.out,pl:a.pl,l:a.lines,h:aHeight(a),st:'play',lb:a.lb,lq:a.lq,cb:a.cb}}
-function netFoes(){return lastPeers.filter(p=>!p.sameTab&&p.kind==='viewer').map(p=>{const pr=p.presence||{};return{id:p.peer,kind:'net',sr:Math.max(1,Math.min(5,(p.presence||{}).sr|0||2)),name:(typeof pr.n==='string'?pr.n.slice(0,12):'玩家')+(typeof pr.tg==='string'&&/^\d{4}$/.test(pr.tg)?'#'+pr.tg:''),b:typeof pr.b==='string'?pr.b:'',
+function netFoes(){return lastPeers.filter(p=>!p.sameTab&&p.kind==='viewer').map(p=>{const pr=p.presence||{};return{id:p.peer,kind:'net',sr:Math.max(1,Math.min(5,(p.presence||{}).sr|0||2)),name:(typeof pr.n==='string'?pr.n.slice(0,12):'玩家')+(typeof pr.tg==='string'&&/^\d{4}$/.test(pr.tg)?'#'+pr.tg:'')+(PICON[pr.pl]?' '+PICON[pr.pl]:''),b:typeof pr.b==='string'?pr.b:'',
   dl:Array.isArray(pr.dl)?pr.dl.slice(0,40).map(String):[],out:!!pr.out,pl:Math.max(0,Math.min(6,pr.pl|0)),l:Math.max(0,pr.l|0),h:Math.max(0,Math.min(20,pr.h|0)),st:typeof pr.st==='string'?pr.st:'idle',lb:pr.lb,lq:pr.lq,cb:pr.cb|0}})}
 function foes(){
   if(g.mode==='solo')return AIS.map(aiFoe);
@@ -678,7 +685,7 @@ function foes(){
   if(me&&me===g.aiHost)list.push(...AIS.map(aiFoe));else for(const[id,s]of netAIs)list.push({...s,id,kind:'ai',st:'play'});
   return list;
 }
-function meP(){return{id:myId(),sr:myStars(),name:fullName(),dl:g.dl||[],out:!!g.out,pl:g.pl||0,l:g.lines||0,h:height(),me:true}}
+function meP(){return{id:myId(),sr:myStars(),name:fullName()+' '+PICON[PLAT],dl:g.dl||[],out:!!g.out,pl:g.pl||0,l:g.lines||0,h:height(),me:true}}
 const everyone=()=>[meP(),...foes()];
 function koOf(id,all){let k=0;for(const p of all)for(const x of p.dl||[])if(x===id)k++;return k}
 const aliveCount=()=>everyone().filter(p=>!p.out).length;
@@ -688,10 +695,10 @@ function cycleTarget(){const l=foes().filter(f=>!f.out);if(l.length<2)return;con
 
 /* ---------- AI 對手（可多開） ---------- */
 const AISTAR={ai1:1,ai2:2,ai3:3,ai4:4},STARLV=[null,'ai1','ai2','ai3','ai4','ai4'];
-let BEST=2;try{BEST=Math.max(2,Math.min(5,+localStorage.getItem('bb-best')||2))}catch(_){}
+let BEST=Math.max(2,Math.min(5,+lsGet('bb-best-'+PLAT)||2));
 function starsOf(apm){apm=+apm||0;return apm<12?1:apm<25?2:apm<45?3:apm<70?4:5}
 function myStars(){return starsOf(myApm)}
-function bumpBest(n){if(n>BEST){BEST=n;try{localStorage.setItem('bb-best',BEST)}catch(_){}buildLvl();return true}return false}
+function bumpBest(n){if(n>BEST){BEST=n;lsSet('bb-best-'+PLAT,BEST);buildLvl();return true}return false}
 function buildLvl(){const sel=$('lvl'),fo=$('foe');if(!sel||!fo)return;const cur=sel.value||'0';sel.textContent='';const o0=new Option(`星級：自動（${myStars()}★）`,'0');sel.add(o0);
   for(let n=1;n<=5;n++){const o=new Option(n<=BEST?'★'.repeat(n)+`　${n} 星`:`${n} 星　🔒 達到 ${n}★ 解鎖`,String(n));o.disabled=n>BEST;sel.add(o)}sel.value=+cur<=BEST?cur:'0';
   for(const o of fo.options){const need=AISTAR[o.value];if(!need)continue;const base=AIL[o.value].name;o.disabled=need>BEST;o.textContent=need>BEST?`${base}　🔒 ${need}★`:base}
@@ -782,7 +789,8 @@ function press(k){
 }
 function release(k){if(k==='D')padSoft=false;if((k==='L'&&held===-1)||(k==='R'&&held===1))held=0;if(k==='D')soft=false}
 const KEYS={ArrowLeft:'L',ArrowRight:'R',ArrowDown:'D',Space:'HD',ArrowUp:'CW',KeyX:'CW',KeyZ:'CCW',ControlLeft:'CCW',KeyC:'H',ShiftLeft:'H',ShiftRight:'H'};
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.code==='Tab'&&g.running){e.preventDefault();cycleTarget();return}const k=KEYS[e.code];if(!k)return;e.preventDefault();if(!e.repeat)press(k)});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.code==='Tab'&&g.running){e.preventDefault();cycleTarget();return}const k=KEYS[e.code];if(!k)return;e.preventDefault();if(g.running)g.kb=(g.kb||0)+1;if(!e.repeat)press(k)});
+addEventListener('pointerdown',e=>{if(g.running&&e.pointerType==='touch')g.tc=(g.tc||0)+1},true);
 addEventListener('keyup',e=>{const k=KEYS[e.code];if(k)release(k)});
 for(const el of[$('gz'),$('pad')])el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener('dblclick',e=>{if(e.target.closest('main'))e.preventDefault()},{passive:false});
@@ -878,7 +886,7 @@ async function joinRoom(code){
   try{M=await R.join('bb-'+code)}catch(e){const ss=await srvStatus();if(!ss.online){st(ss.msg);return false}st(e&&e.code==='limit_reached'?'這個房間已滿（最多 6 人），換一個房號吧。':'進房失敗（'+(e&&e.code||'錯誤')+'），請稍後再試。');return false}
   M.onPeers(ch=>peersChanged(ch.peers),e=>st('連線中斷（'+e.code+'）'));
   M.on('atk',onAtk);M.on('go',onGo);M.on('ai',onAiMsg);
-  fillAI=$('fill').checked;pres({n:nick(),tg:TAG,sr:myStars(),st:'idle',w:wins,fa:fillAI});$('bReady').disabled=false;$('bInv').hidden=inClaude;syncMenu();return true}
+  fillAI=$('fill').checked;pres({n:nick(),tg:TAG,pl:PLAT,sr:myStars(),st:'idle',w:wins,fa:fillAI});$('bReady').disabled=false;$('bInv').hidden=inClaude;syncMenu();return true}
 $('bJoin').onclick=async()=>{
   if(!R)return;if(LB)await stopMM();const code=$('code').value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
   if(!code){st('請先輸入房號，或按「隨機房號」。');return}
@@ -886,7 +894,7 @@ $('bJoin').onclick=async()=>{
   if(await joinRoom(code))st(`已進入房號 ${code}，最多 6 人。可以按「複製邀請連結」傳給朋友。`);
 };
 $('fill').onchange=()=>{fillAI=$('fill').checked;pres({fa:fillAI});if(M)peersChanged(lastPeers)};
-$('bReady').onclick=()=>{if(!M)return;if(g.running&&g.mode==='online')return;ready=!ready;goSent=false;$('bReady').textContent=ready?'取消準備':'準備';$('bReady').classList.toggle('idle',ready);pres({st:ready?'ready':'idle',n:nick(),tg:TAG,sr:myStars(),w:wins,dg:$('dig').checked,fa:fillAI});if(ready)overlay('準備好了',roomHumans().length>1?'等其他人按準備…':wantFill()?'跟 AI 補位開打…':'等對手進房…');maybeGo()};
+$('bReady').onclick=()=>{if(!M)return;if(g.running&&g.mode==='online')return;ready=!ready;goSent=false;$('bReady').textContent=ready?'取消準備':'準備';$('bReady').classList.toggle('idle',ready);pres({st:ready?'ready':'idle',n:nick(),tg:TAG,pl:PLAT,sr:myStars(),w:wins,dg:$('dig').checked,fa:fillAI});if(ready)overlay('準備好了',roomHumans().length>1?'等其他人按準備…':wantFill()?'跟 AI 補位開打…':'等對手進房…');maybeGo()};
 let fillAI=false,expect=null,goGr=null;
 const roomHumans=()=>lastPeers.filter(p=>p.kind==='viewer');
 const wantFill=()=>fillAI||roomHumans().some(p=>!p.sameTab&&(p.presence||{}).fa);
@@ -908,7 +916,7 @@ function maybeGo(){
   if(!go)return;
   const ids=rd.map(p=>p.peer).slice(0,6),nAI=wantFill()?Math.max(0,6-ids.length):0;goSent=true;
   (async()=>{const gl=nAI?await fetchGhosts(nAI):[],ais=[];hostGhosts={};
-    for(let i=1;i<=nAI;i++){const gh=gl[i-1],id='ai'+i;ais.push({id,name:gh?gh.name+(gh.tag?'#'+gh.tag:''):'AI '+i,lv:'ai2',sr:gh?starsOf(gh.apm):2});if(gh)hostGhosts[id]=gh}
+    for(let i=1;i<=nAI;i++){const gh=gl[i-1],id='ai'+i;ais.push({id,name:gh?gh.name+(gh.tag?'#'+gh.tag:'')+(gh.pl?' '+PICON[gh.pl]:''):'AI '+i,lv:'ai2',sr:gh?starsOf(gh.apm):2});if(gh)hostGhosts[id]=gh}
     if(!M||g.running){goSent=false;return}
     goGr={ids,ais,dig:$('dig').checked};M.emit('go',{...goGr,host:me}).catch(()=>{goSent=false})})();
 }
@@ -960,7 +968,7 @@ async function onMatch(m){const d=m.data||{};if(!LB||!Array.isArray(d.ids)||type
   await stopMM();$('code').value=d.room;$('fill').checked=true;
   const okJoin=await joinRoom(d.room);if(!okJoin)return;
   expect={n:Math.min(6,d.ids.length),deadline:Date.now()+6000};ready=true;$('bReady').textContent='取消準備';
-  fillAI=true;pres({st:'ready',n:nick(),tg:TAG,sr:myStars(),w:wins,dg:$('dig').checked,fa:true});closeMenu();overlay('配對成功',`${d.ids.length} 位玩家${d.ids.length<6?'＋AI 補位':''}・準備開始…`);maybeGo();
+  fillAI=true;pres({st:'ready',n:nick(),tg:TAG,pl:PLAT,sr:myStars(),w:wins,dg:$('dig').checked,fa:true});closeMenu();overlay('配對成功',`${d.ids.length} 位玩家${d.ids.length<6?'＋AI 補位':''}・準備開始…`);maybeGo();
 }
 
 /* ---------- 開始選單（盤面內） ---------- */
@@ -979,7 +987,7 @@ $('foe').onchange=syncMenu;
 if(!SRV){$('optGhost').remove()}
 $('bLeave').onclick=async()=>{await leaveRoom();st('已離開房間。');syncMenu()};
 $('resOk').onclick=()=>{$('res').hidden=true;openMenu(g.mode==='online'&&M?'room':'solo',$('resSub').textContent)};
-$('nick').addEventListener('change',()=>{try{localStorage.setItem('bb-nick',nick())}catch(_){}if(M)pres({n:nick(),tg:TAG,sr:myStars()});if(LB)LB.presence({n:nick()}).catch(()=>{})});
+$('nick').addEventListener('change',()=>{try{localStorage.setItem('bb-nick',nick())}catch(_){}if(M)pres({n:nick(),tg:TAG,pl:PLAT,sr:myStars()});if(LB)LB.presence({n:nick()}).catch(()=>{})});
 $('nick').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
 /* ---------- 主迴圈 ---------- */
 let last=performance.now();
